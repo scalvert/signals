@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1776024136921,
+      "tag": "0000_colorful_winter_soldier",
+      "breakpoints": true
+    }
+  ]
+}
