@@ -33,6 +33,7 @@ export const repos = sqliteTable('repos', {
   grade: text('grade').notNull().default('F'),
   triage: text('triage').notNull().default('critical'),
   pillars: text('pillars').notNull(), // JSON: {activity, community, quality, security}
+  checkResults: text('check_results').notNull().default('{}'), // JSON: Record<checkId, CheckResult>
   syncedAt: text('synced_at').notNull(),
 })
 

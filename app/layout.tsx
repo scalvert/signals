@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Beacon — OSS Maintainer Dashboard',
+  title: 'Signals — OSS Maintainer Dashboard',
   description:
     'Self-hostable dashboard for managing GitHub repositories with health scoring, signal detection, and AI-powered triage.',
 }

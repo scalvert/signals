@@ -42,8 +42,18 @@ export interface Repo {
   grade: HealthGrade
   triage: TriageStatus
   pillars: RepoPillars
+  checkResults: Record<string, CheckResultData>
   workspaceId: number
   syncedAt: string
+}
+
+export interface CheckResultData {
+  score: number
+  label: string
+  evidence: string[]
+  actionable?: string
+  pillar: string
+  checkName: string
 }
 
 export interface PullRequest {

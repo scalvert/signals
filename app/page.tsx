@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation'
+import { getWorkspaces } from '@/lib/db/queries'
 
 export default function Home() {
-  // TODO: Check if workspaces exist in DB
-  // If yes, redirect to first workspace
-  // If no and DEFAULT_ORG is set, create default workspace and redirect
-  // If no, redirect to /setup
+  const workspaces = getWorkspaces()
+
+  if (workspaces.length > 0) {
+    redirect(`/workspace/${workspaces[0].slug}`)
+  }
+
   redirect('/setup')
 }
