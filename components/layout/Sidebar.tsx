@@ -35,9 +35,7 @@ export function Sidebar({ workspace }: SidebarProps) {
   return (
     <aside className="w-[220px] shrink-0 flex flex-col h-screen bg-sidebar border-r border-sidebar-border text-sidebar-foreground">
       <Link href={basePath} className="flex items-center gap-2.5 px-4 py-4 border-b border-sidebar-border hover:bg-sidebar-accent transition-colors">
-        <div className="w-7 h-7 rounded-md bg-white flex items-center justify-center shrink-0">
-          <span className="text-black text-xs font-bold leading-none">S</span>
-        </div>
+        <img src="/signals-icon.png" alt="Signals" className="w-6 h-6 shrink-0 brightness-0 invert" />
         <span className="font-semibold text-[15px] text-white tracking-tight">Signals</span>
       </Link>
 
