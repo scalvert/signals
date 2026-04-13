@@ -20,5 +20,5 @@ export default async function CommandCenterPage({
     getWorkspaceStats(workspace.id),
   ])
 
-  return <CommandCenter repos={repos} stats={stats} />
+  return <CommandCenter repos={repos} stats={stats} workspaceSlug={slug} />
 }

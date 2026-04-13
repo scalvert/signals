@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
@@ -13,15 +14,32 @@ interface WorkspaceShellProps {
 
 export function WorkspaceShell({
   workspace,
-  syncStatus,
+  syncStatus: initialSyncStatus,
   children,
 }: WorkspaceShellProps) {
   const router = useRouter()
+  const [syncing, setSyncing] = useState(false)
 
   async function handleSync() {
-    await fetch(`/api/sync?slug=${workspace.slug}`, { method: 'POST' })
-    router.refresh()
+    setSyncing(true)
+    try {
+      await fetch(`/api/sync?slug=${workspace.slug}`, { method: 'POST' })
+      router.refresh()
+    } finally {
+      setSyncing(false)
+    }
   }
+
+  const effectiveSyncStatus: SyncStatus | null = syncing
+    ? {
+        id: 0,
+        status: 'running',
+        startedAt: new Date().toISOString(),
+        completedAt: null,
+        repoCount: null,
+        error: null,
+      }
+    : initialSyncStatus
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-sans">
@@ -29,8 +47,9 @@ export function WorkspaceShell({
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           workspaceSlug={workspace.slug}
-          syncStatus={syncStatus}
+          syncStatus={effectiveSyncStatus}
           onSync={handleSync}
+          syncing={syncing}
         />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

@@ -26,6 +26,11 @@
 
 # database
 *.db
+*.db-shm
+*.db-wal
+
+# scaffold temp
+beacon-scaffold/
 
 # debug
 npm-debug.log*

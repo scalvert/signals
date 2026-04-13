@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { GitBranch, GitPullRequest, Activity, Star } from 'lucide-react'
 import { StatCard } from '@/components/shared/StatCard'
 import { RepoCard } from '@/components/shared/RepoCard'
@@ -10,6 +11,7 @@ import type { Repo, WorkspaceStats, TriageStatus } from '@/types/workspace'
 interface CommandCenterProps {
   repos: Repo[]
   stats: WorkspaceStats
+  workspaceSlug: string
 }
 
 const triageSections: { status: TriageStatus; label: string }[] = [
@@ -18,7 +20,9 @@ const triageSections: { status: TriageStatus; label: string }[] = [
   { status: 'critical', label: 'Critical' },
 ]
 
-export function CommandCenter({ repos, stats }: CommandCenterProps) {
+export function CommandCenter({ repos, stats, workspaceSlug }: CommandCenterProps) {
+  const base = `/workspace/${workspaceSlug}`
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <div className="grid grid-cols-4 gap-4">
@@ -27,6 +31,7 @@ export function CommandCenter({ repos, stats }: CommandCenterProps) {
           value={stats.totalRepos}
           icon={GitBranch}
           color="bg-muted text-muted-foreground"
+          href={`${base}/repos`}
         />
         <StatCard
           label="Open PRs"
@@ -34,12 +39,14 @@ export function CommandCenter({ repos, stats }: CommandCenterProps) {
           sub="across all repos"
           icon={GitPullRequest}
           color="bg-muted text-muted-foreground"
+          href={`${base}/prs`}
         />
         <StatCard
           label="Avg Health Score"
           value={stats.avgHealthScore}
           icon={Activity}
           color="bg-muted text-muted-foreground"
+          href={`${base}/repos`}
         />
         <StatCard
           label="Total Stars"
@@ -47,6 +54,7 @@ export function CommandCenter({ repos, stats }: CommandCenterProps) {
           sub="across all repos"
           icon={Star}
           color="bg-muted text-muted-foreground"
+          href={`${base}/insights`}
         />
       </div>
 
@@ -73,7 +81,9 @@ export function CommandCenter({ repos, stats }: CommandCenterProps) {
                   </span>
                 </div>
                 {sectionRepos.map((repo) => (
-                  <RepoCard key={repo.id} repo={repo} />
+                  <Link key={repo.id} href={`${base}/repos`}>
+                    <RepoCard repo={repo} />
+                  </Link>
                 ))}
               </div>
             )
