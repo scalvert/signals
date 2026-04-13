@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
+import { AiChatPanel } from '@/components/layout/AiChatPanel'
 import type { Workspace, SyncStatus } from '@/types/workspace'
 
 interface WorkspaceShellProps {
@@ -53,6 +54,7 @@ export function WorkspaceShell({
         />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+      <AiChatPanel workspaceId={workspace.id} />
     </div>
   )
 }
