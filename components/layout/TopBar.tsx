@@ -1,7 +1,8 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { RefreshCw, Check, AlertCircle } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { RefreshCw, Check, AlertCircle, Sun, Moon } from 'lucide-react'
 import { cn, formatRelativeDate } from '@/lib/utils'
 import type { SyncStatus } from '@/types/workspace'
 
@@ -23,6 +24,7 @@ interface TopBarProps {
 
 export function TopBar({ workspaceSlug, syncStatus, onSync, syncing }: TopBarProps) {
   const pathname = usePathname()
+  const { resolvedTheme, setTheme } = useTheme()
   const basePath = `/workspace/${workspaceSlug}`
   const segment = pathname.replace(basePath, '') || ''
   const meta = screenTitles[segment] || screenTitles['']
@@ -55,6 +57,17 @@ export function TopBar({ workspaceSlug, syncStatus, onSync, syncing }: TopBarPro
         >
           <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           {syncing ? 'Syncing...' : 'Sync now'}
+        </button>
+        <button
+          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+          className="h-8 w-8 flex items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted transition-colors"
+          title={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {resolvedTheme === 'dark' ? (
+            <Sun className="w-3.5 h-3.5" />
+          ) : (
+            <Moon className="w-3.5 h-3.5" />
+          )}
         </button>
       </div>
     </header>

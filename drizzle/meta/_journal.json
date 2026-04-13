@@ -15,6 +15,13 @@
       "when": 1776036573423,
       "tag": "0001_milky_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776090293571,
+      "tag": "0002_famous_black_bird",
+      "breakpoints": true
     }
   ]
 }

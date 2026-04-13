@@ -5,6 +5,7 @@ export const workspaces = sqliteTable('workspaces', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   sources: text('sources').notNull(), // JSON array of WorkspaceSource
+  excludedRepos: text('excluded_repos').notNull().default('[]'), // JSON array of fullName strings
   createdAt: text('created_at').notNull(),
 })
 

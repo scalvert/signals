@@ -91,6 +91,7 @@ export interface Workspace {
   name: string
   slug: string
   sources: WorkspaceSource[]
+  excludedRepos: string[]
   createdAt: string
 }
 

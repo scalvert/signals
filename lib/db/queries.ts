@@ -53,7 +53,18 @@ function parseWorkspaceRow(row: typeof workspaces.$inferSelect): Workspace {
   return {
     ...row,
     sources: JSON.parse(row.sources) as WorkspaceSource[],
+    excludedRepos: JSON.parse(row.excludedRepos) as string[],
   }
+}
+
+export function updateWorkspaceExcludedRepos(
+  id: number,
+  excludedRepos: string[],
+): void {
+  db.update(workspaces)
+    .set({ excludedRepos: JSON.stringify(excludedRepos) })
+    .where(eq(workspaces.id, id))
+    .run()
 }
 
 export function getRepos(workspaceId: number): Repo[] {

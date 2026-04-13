@@ -32,10 +32,13 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     const previousRepos = getRepos(workspace.id)
 
     // Fetch data from GitHub
-    const [rawRepos, rawPRs] = await Promise.all([
+    const excluded = new Set(workspace.excludedRepos)
+    const [allRepos, allPRs] = await Promise.all([
       fetchReposForWorkspace(workspace.sources),
       fetchPRsForWorkspace(workspace.sources),
     ])
+    const rawRepos = allRepos.filter((r) => !excluded.has(r.fullName))
+    const rawPRs = allPRs.filter((pr) => !excluded.has(pr.repoFullName))
 
     // Clear existing data for this workspace
     db.delete(repos).where(eq(repos.workspaceId, workspace.id)).run()

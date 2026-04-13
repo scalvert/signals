@@ -42,6 +42,41 @@
   --health-d: oklch(0.55 0.22 27);
 }
 
+.dark {
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.93 0 0);
+  --card: oklch(0.16 0 0);
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.16 0 0);
+  --popover-foreground: oklch(0.93 0 0);
+  --primary: oklch(0.93 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+  --secondary: oklch(0.22 0 0);
+  --secondary-foreground: oklch(0.88 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.55 0 0);
+  --accent: oklch(0.22 0 0);
+  --accent-foreground: oklch(0.93 0 0);
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.55 0.12 250);
+  --chart-1: oklch(0.65 0.12 250);
+  --chart-2: oklch(0.65 0.12 185);
+  --chart-3: oklch(0.65 0.12 55);
+  --chart-4: oklch(0.60 0.18 27);
+  --chart-5: oklch(0.62 0.14 145);
+  --sidebar: oklch(0.10 0 0);
+  --sidebar-foreground: oklch(0.85 0 0);
+  --sidebar-primary: oklch(0.93 0 0);
+  --sidebar-primary-foreground: oklch(0.10 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.20 0 0);
+  --sidebar-ring: oklch(0.55 0.12 250);
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -110,12 +145,12 @@
   li { margin: 0.15em 0; }
   code {
     font-size: 0.9em;
-    background: oklch(0.92 0 0);
+    background: var(--muted);
     padding: 0.1em 0.35em;
     border-radius: 3px;
   }
   pre {
-    background: oklch(0.92 0 0);
+    background: var(--muted);
     padding: 0.5em;
     border-radius: 4px;
     overflow-x: auto;
@@ -131,7 +166,7 @@
     text-underline-offset: 2px;
   }
   hr {
-    border-color: oklch(0.88 0 0);
+    border-color: var(--border);
     margin: 0.5em 0;
   }
   table {
@@ -141,9 +176,9 @@
     font-size: 0.9em;
   }
   th, td {
-    border: 1px solid oklch(0.88 0 0);
+    border: 1px solid var(--border);
     padding: 0.25em 0.5em;
     text-align: left;
   }
-  th { font-weight: 600; background: oklch(0.95 0 0); }
+  th { font-weight: 600; background: var(--muted); }
 }

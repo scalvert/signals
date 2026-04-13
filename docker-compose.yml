@@ -1,0 +1,15 @@
+services:
+  signals:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - signals-data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=/app/data/signals.db
+    restart: unless-stopped
+
+volumes:
+  signals-data:
