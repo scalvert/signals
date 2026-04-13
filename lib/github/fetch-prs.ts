@@ -1,5 +1,5 @@
 import { getOctokit } from './client'
-import { ORG_PRS_QUERY, SINGLE_REPO_PRS_QUERY } from './queries'
+import { ORG_PRS_QUERY, USER_PRS_QUERY, SINGLE_REPO_PRS_QUERY } from './queries'
 import type { GitHubPRNode } from './types'
 import type { WorkspaceSource } from '@/types/workspace'
 
@@ -52,28 +52,54 @@ export async function fetchPRsForWorkspace(
   })
 }
 
-async function fetchOrgPRs(org: string): Promise<RawPullRequest[]> {
+async function fetchOrgPRs(login: string): Promise<RawPullRequest[]> {
   const octokit = getOctokit()
 
-  const result = await octokit.graphql.paginate<{
-    organization: {
-      repositories: {
-        nodes: Array<{
-          nameWithOwner: string
-          pullRequests: { nodes: GitHubPRNode[] }
-        }>
-        pageInfo: { hasNextPage: boolean; endCursor: string }
+  try {
+    const result = await octokit.graphql.paginate<{
+      organization: {
+        repositories: {
+          nodes: Array<{
+            nameWithOwner: string
+            pullRequests: { nodes: GitHubPRNode[] }
+          }>
+          pageInfo: { hasNextPage: boolean; endCursor: string }
+        }
+      }
+    }>(ORG_PRS_QUERY, { org: login })
+
+    const prs: RawPullRequest[] = []
+    for (const repo of result.organization.repositories.nodes) {
+      for (const pr of repo.pullRequests.nodes) {
+        prs.push(parsePRNode(pr, repo.nameWithOwner))
       }
     }
-  }>(ORG_PRS_QUERY, { org })
+    return prs
+  } catch (err) {
+    const message = err instanceof Error ? err.message : ''
+    if (!message.includes('Could not resolve to an Organization')) throw err
 
-  const prs: RawPullRequest[] = []
-  for (const repo of result.organization.repositories.nodes) {
-    for (const pr of repo.pullRequests.nodes) {
-      prs.push(parsePRNode(pr, repo.nameWithOwner))
+    console.info(`[signals] "${login}" is not an org, trying user PR query`)
+    const result = await octokit.graphql.paginate<{
+      user: {
+        repositories: {
+          nodes: Array<{
+            nameWithOwner: string
+            pullRequests: { nodes: GitHubPRNode[] }
+          }>
+          pageInfo: { hasNextPage: boolean; endCursor: string }
+        }
+      }
+    }>(USER_PRS_QUERY, { user: login })
+
+    const prs: RawPullRequest[] = []
+    for (const repo of result.user.repositories.nodes) {
+      for (const pr of repo.pullRequests.nodes) {
+        prs.push(parsePRNode(pr, repo.nameWithOwner))
+      }
     }
+    return prs
   }
-  return prs
 }
 
 async function fetchSingleRepoPRs(

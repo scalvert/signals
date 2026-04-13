@@ -1,5 +1,5 @@
 import { getOctokit } from './client'
-import { ORG_REPOS_QUERY, SINGLE_REPO_QUERY } from './queries'
+import { ORG_REPOS_QUERY, USER_REPOS_QUERY, SINGLE_REPO_QUERY } from './queries'
 import type { GitHubRepoNode } from './types'
 import type { WorkspaceSource } from '@/types/workspace'
 
@@ -18,6 +18,7 @@ interface RawRepo {
   hasCI: boolean
   hasLicense: boolean
   hasContributing: boolean
+  isPrivate: boolean
 }
 
 export async function fetchReposForWorkspace(
@@ -47,19 +48,37 @@ export async function fetchReposForWorkspace(
   })
 }
 
-async function fetchOrgRepos(org: string): Promise<RawRepo[]> {
+async function fetchOrgRepos(login: string): Promise<RawRepo[]> {
   const octokit = getOctokit()
 
-  const result = await octokit.graphql.paginate<{
-    organization: {
-      repositories: {
-        nodes: GitHubRepoNode[]
-        pageInfo: { hasNextPage: boolean; endCursor: string }
+  // Try as organization first, fall back to user account
+  try {
+    const result = await octokit.graphql.paginate<{
+      organization: {
+        repositories: {
+          nodes: GitHubRepoNode[]
+          pageInfo: { hasNextPage: boolean; endCursor: string }
+        }
       }
-    }
-  }>(ORG_REPOS_QUERY, { org })
+    }>(ORG_REPOS_QUERY, { org: login })
 
-  return result.organization.repositories.nodes.map(parseRepoNode)
+    return result.organization.repositories.nodes.map(parseRepoNode)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : ''
+    if (!message.includes('Could not resolve to an Organization')) throw err
+
+    console.info(`[signals] "${login}" is not an org, trying as user account`)
+    const result = await octokit.graphql.paginate<{
+      user: {
+        repositories: {
+          nodes: GitHubRepoNode[]
+          pageInfo: { hasNextPage: boolean; endCursor: string }
+        }
+      }
+    }>(USER_REPOS_QUERY, { user: login })
+
+    return result.user.repositories.nodes.map(parseRepoNode)
+  }
 }
 
 async function fetchSingleRepo(
@@ -100,5 +119,6 @@ function parseRepoNode(node: GitHubRepoNode): RawRepo {
     hasCI: node.workflowsDir !== null,
     hasLicense: node.licenseInfo !== null,
     hasContributing: node.contributingFile !== null,
+    isPrivate: node.isPrivate,
   }
 }

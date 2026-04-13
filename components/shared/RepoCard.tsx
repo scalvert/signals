@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { triageColors, languageColors } from '@/lib/constants'
 import { HealthBadge } from './HealthBadge'
-import { Star, GitPullRequest, AlertCircle } from 'lucide-react'
+import { Star, GitPullRequest, AlertCircle, Lock } from 'lucide-react'
 import type { Repo } from '@/types/workspace'
 
 export function RepoCard({ repo }: { repo: Repo }) {
@@ -12,6 +12,7 @@ export function RepoCard({ repo }: { repo: Repo }) {
         <div className="flex items-center gap-1.5">
           <span className={cn('w-2 h-2 rounded-full shrink-0', langColor)} title={repo.language ?? ''} />
           <span className="text-[13px] font-semibold text-foreground leading-tight">{repo.name}</span>
+          {repo.isPrivate && <Lock className="w-3 h-3 text-muted-foreground shrink-0" />}
         </div>
         <HealthBadge grade={repo.grade} score={repo.score} />
       </div>

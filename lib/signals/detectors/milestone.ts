@@ -5,7 +5,7 @@ const MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
 
 export const milestoneDetector: SignalDetector = {
   type: 'milestone',
-  detect(currentRepos, previousRepos, existingSignals): DetectedSignal[] {
+  detect(currentRepos, previousRepos, existingSignals, _repoContexts): DetectedSignal[] {
     const signals: DetectedSignal[] = []
     const prevMap = new Map(previousRepos.map((r) => [r.fullName, r]))
 

@@ -1,11 +1,12 @@
 import type { SignalDetector, DetectedSignal } from '../types'
 import type { Repo, Signal } from '@/types/workspace'
+import { shouldSuppressSignal } from '../context-match'
 
 const DEDUP_DAYS = 7
 
 export const healthDropDetector: SignalDetector = {
   type: 'health-drop',
-  detect(currentRepos, previousRepos, existingSignals): DetectedSignal[] {
+  detect(currentRepos, previousRepos, existingSignals, repoContexts): DetectedSignal[] {
     const signals: DetectedSignal[] = []
     const prevMap = new Map(previousRepos.map((r) => [r.fullName, r]))
     const cutoff = Date.now() - DEDUP_DAYS * 24 * 60 * 60 * 1000
@@ -18,6 +19,9 @@ export const healthDropDetector: SignalDetector = {
       if (drop < 4) continue
 
       if (isDuplicate(existingSignals, repo.fullName, cutoff)) continue
+
+      const context = repoContexts.get(repo.fullName)
+      if (context && shouldSuppressSignal('health-drop', context)) continue
 
       const severity = drop > 8 ? 'critical' : 'warning'
 

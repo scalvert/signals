@@ -12,5 +12,5 @@ export default async function ReposPage({
   if (!workspace) notFound()
 
   const repos = getRepos(workspace.id)
-  return <Repositories repos={repos} />
+  return <Repositories repos={repos} workspaceId={workspace.id} />
 }

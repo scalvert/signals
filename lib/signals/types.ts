@@ -15,5 +15,6 @@ export interface SignalDetector {
     currentRepos: Repo[],
     previousRepos: Repo[],
     existingSignals: Signal[],
+    repoContexts: Map<string, string>,
   ): DetectedSignal[]
 }

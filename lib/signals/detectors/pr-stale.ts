@@ -1,5 +1,6 @@
 import type { DetectedSignal } from '../types'
 import type { PullRequest, Signal } from '@/types/workspace'
+import { shouldSuppressSignal } from '../context-match'
 
 const EXTERNAL_STALE_DAYS = 7
 const INTERNAL_STALE_DAYS = 14
@@ -7,6 +8,7 @@ const INTERNAL_STALE_DAYS = 14
 export function detectStalePRs(
   prs: PullRequest[],
   existingSignals: Signal[],
+  repoContexts: Map<string, string>,
 ): DetectedSignal[] {
   const signals: DetectedSignal[] = []
 
@@ -26,6 +28,9 @@ export function detectStalePRs(
     const key = prNumbers.sort().join(',')
 
     if (isDuplicate(existingSignals, repoFullName, key)) continue
+
+    const context = repoContexts.get(repoFullName)
+    if (context && shouldSuppressSignal('pr-stale', context)) continue
 
     const oldest = Math.max(...stalePRs.map((p) => p.daysSinceUpdate))
     const hasExternal = stalePRs.some((p) => p.isExternal)

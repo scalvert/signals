@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Star, AlertCircle, GitPullRequest, ChevronUp, ChevronDown, Search, X, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Star, AlertCircle, GitPullRequest, ChevronUp, ChevronDown, Search, X, CheckCircle2, XCircle, AlertTriangle, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatRelativeDate } from '@/lib/utils'
 import { HealthBadge } from '@/components/shared/HealthBadge'
@@ -56,7 +56,65 @@ function CheckResultItem({ checkId, result }: { checkId: string; result: Repo['c
   )
 }
 
-function RepoDetailPanel({ repo, onClose }: { repo: Repo; onClose: () => void }) {
+function RepoContextEditor({ workspaceId, repoFullName }: { workspaceId: number; repoFullName: string }) {
+  const [context, setContext] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    fetch(`/api/repo-context?workspaceId=${workspaceId}&repo=${encodeURIComponent(repoFullName)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setContext(data.context?.context ?? '')
+        setLoading(false)
+      })
+  }, [workspaceId, repoFullName])
+
+  async function handleSave() {
+    setSaving(true)
+    await fetch('/api/repo-context', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspaceId, repoFullName, context }),
+    })
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  if (loading) return null
+
+  return (
+    <div>
+      <h3 className="text-[12px] font-semibold text-foreground uppercase tracking-wide mb-2">
+        Context
+      </h3>
+      <p className="text-[11px] text-muted-foreground mb-2">
+        Describe this repo&apos;s expected behavior. This shapes signal detection and feed generation.
+      </p>
+      <textarea
+        value={context}
+        onChange={(e) => setContext(e.target.value)}
+        rows={3}
+        className="w-full text-[12px] rounded border border-border bg-background text-foreground px-2 py-1.5 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+        placeholder="e.g., Low cadence repo — only updated when upstream API changes."
+      />
+      <div className="flex items-center gap-2 mt-1.5">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="h-7 px-3 text-[11px] font-medium rounded bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        {saved && <span className="text-[11px] text-[var(--health-a)]">Saved</span>}
+      </div>
+    </div>
+  )
+}
+
+function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspaceId: number; onClose: () => void }) {
   const checks = repo.checkResults ?? {}
   const groupedChecks = Object.entries(checks).reduce<Record<string, [string, Repo['checkResults'][string]][]>>(
     (acc, [id, result]) => {
@@ -120,6 +178,8 @@ function RepoDetailPanel({ repo, onClose }: { repo: Repo; onClose: () => void })
           </div>
         </div>
 
+        <RepoContextEditor workspaceId={workspaceId} repoFullName={repo.fullName} />
+
         {failingChecks.length > 0 && (
           <div>
             <h3 className="text-[12px] font-semibold text-foreground uppercase tracking-wide mb-2">
@@ -152,7 +212,7 @@ function RepoDetailPanel({ repo, onClose }: { repo: Repo; onClose: () => void })
   )
 }
 
-export function Repositories({ repos }: { repos: Repo[] }) {
+export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceId: number }) {
   const [search, setSearch] = useState('')
   const [healthFilter, setHealthFilter] = useState<TriageStatus | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('score')
@@ -253,7 +313,10 @@ export function Repositories({ repos }: { repos: Repo[] }) {
                   <tr key={repo.id} onClick={() => setSelectedRepo(repo)}
                     className={cn('hover:bg-muted/30 transition-colors cursor-pointer', selectedRepo?.id === repo.id && 'bg-muted/50')}>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-foreground text-[13px]">{repo.name}</div>
+                      <div className="font-semibold text-foreground text-[13px] flex items-center gap-1.5">
+                        {repo.name}
+                        {repo.isPrivate && <Lock className="w-3 h-3 text-muted-foreground" />}
+                      </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[280px]">{repo.description}</div>
                     </td>
                     <td className="px-4 py-3"><HealthBadge grade={repo.grade} score={repo.score} /></td>
@@ -270,7 +333,7 @@ export function Repositories({ repos }: { repos: Repo[] }) {
           </div>
         </div>
       </div>
-      {selectedRepo && <RepoDetailPanel repo={selectedRepo} onClose={() => setSelectedRepo(null)} />}
+      {selectedRepo && <RepoDetailPanel repo={selectedRepo} workspaceId={workspaceId} onClose={() => setSelectedRepo(null)} />}
     </div>
   )
 }

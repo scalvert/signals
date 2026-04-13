@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const workspaces = sqliteTable('workspaces', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -28,6 +28,9 @@ export const repos = sqliteTable('repos', {
     .notNull()
     .default(false),
   hasContributing: integer('has_contributing', { mode: 'boolean' })
+    .notNull()
+    .default(false),
+  isPrivate: integer('is_private', { mode: 'boolean' })
     .notNull()
     .default(false),
   score: real('score').notNull().default(0),
@@ -65,6 +68,9 @@ export const signals = sqliteTable('signals', {
   metadata: text('metadata').notNull().default('{}'), // JSON
   detectedAt: text('detected_at').notNull(),
   resolvedAt: text('resolved_at'),
+  status: text('status').notNull().default('active'),
+  dismissedReason: text('dismissed_reason'),
+  enrichedBody: text('enriched_body'),
 })
 
 export const syncLog = sqliteTable('sync_log', {
@@ -75,4 +81,20 @@ export const syncLog = sqliteTable('sync_log', {
   completedAt: text('completed_at'),
   repoCount: integer('repo_count'),
   error: text('error'),
+})
+
+export const repoContext = sqliteTable('repo_context', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  repoFullName: text('repo_full_name').notNull(),
+  context: text('context').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  uniqueIndex('repo_context_workspace_repo_idx').on(table.workspaceId, table.repoFullName),
+])
+
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: text('updated_at').notNull(),
 })

@@ -7,7 +7,7 @@ const SPIKE_RATIO = 3.0
 
 export const starSpikeDetector: SignalDetector = {
   type: 'star-spike',
-  detect(currentRepos, previousRepos, existingSignals): DetectedSignal[] {
+  detect(currentRepos, previousRepos, existingSignals, _repoContexts): DetectedSignal[] {
     const signals: DetectedSignal[] = []
     const prevMap = new Map(previousRepos.map((r) => [r.fullName, r]))
     const cutoff = Date.now() - DEDUP_HOURS * 60 * 60 * 1000

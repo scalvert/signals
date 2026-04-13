@@ -82,6 +82,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
           hasCI: raw.hasCI,
           hasLicense: raw.hasLicense,
           hasContributing: raw.hasContributing,
+          isPrivate: raw.isPrivate,
           score: scored.score,
           grade: scored.grade,
           triage: scored.triage,
@@ -113,7 +114,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     }
 
     // Detect signals by comparing previous and current state
-    const signalCount = runSignalDetection(workspace.id, previousRepos)
+    const signalCount = await runSignalDetection(workspace.id, previousRepos)
 
     // Update sync log
     db.update(syncLog)

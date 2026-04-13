@@ -11,6 +11,12 @@ export default async function SignalsPage({
   const workspace = getWorkspaceBySlug(slug)
   if (!workspace) notFound()
 
-  const signals = getSignals(workspace.id)
-  return <SignalFeed signals={signals} />
+  const activeSignals = getSignals(workspace.id, { status: 'active' })
+  const dismissedSignals = getSignals(workspace.id, { status: 'dismissed' })
+  return (
+    <SignalFeed
+      activeSignals={activeSignals}
+      dismissedSignals={dismissedSignals}
+    />
+  )
 }

@@ -38,6 +38,7 @@ export interface Repo {
   hasCI: boolean
   hasLicense: boolean
   hasContributing: boolean
+  isPrivate: boolean
   score: number
   grade: HealthGrade
   triage: TriageStatus
@@ -84,6 +85,17 @@ export interface Signal {
   metadata: Record<string, unknown>
   detectedAt: string
   workspaceId: number
+  status: 'active' | 'dismissed'
+  dismissedReason: string | null
+  enrichedBody: string | null
+}
+
+export interface RepoContext {
+  id: number
+  workspaceId: number
+  repoFullName: string
+  context: string
+  updatedAt: string
 }
 
 export interface Workspace {

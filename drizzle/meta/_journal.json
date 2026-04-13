@@ -22,6 +22,20 @@
       "when": 1776090293571,
       "tag": "0002_famous_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776093395269,
+      "tag": "0003_mighty_cerebro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1776112860713,
+      "tag": "0004_volatile_deathstrike",
+      "breakpoints": true
     }
   ]
 }

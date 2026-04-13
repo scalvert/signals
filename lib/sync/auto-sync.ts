@@ -2,21 +2,23 @@ import { schedule, type ScheduledTask } from 'node-cron'
 import { getWorkspaces } from '@/lib/db/queries'
 import { syncWorkspace } from './engine'
 
-let task: ScheduledTask | null = null
+const globalRef = globalThis as typeof globalThis & {
+  __signalsAutoSyncTask?: ScheduledTask
+}
 
 export function startAutoSync() {
   const intervalMinutes = Number(process.env.SYNC_INTERVAL_MINUTES) || 15
   const cronExpression = `*/${intervalMinutes} * * * *`
 
-  if (task) {
-    task.stop()
+  if (globalRef.__signalsAutoSyncTask) {
+    globalRef.__signalsAutoSyncTask.stop()
   }
 
   console.info(
     `[signals] Auto-sync enabled: every ${intervalMinutes} minutes`,
   )
 
-  task = schedule(cronExpression, async () => {
+  globalRef.__signalsAutoSyncTask = schedule(cronExpression, async () => {
     const workspaces = getWorkspaces()
     for (const workspace of workspaces) {
       try {

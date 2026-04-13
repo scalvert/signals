@@ -1,11 +1,12 @@
 import type { SignalDetector, DetectedSignal } from '../types'
 import type { Repo, Signal } from '@/types/workspace'
+import { shouldSuppressSignal } from '../context-match'
 
 const DEDUP_DAYS = 30
 
 export const dormantDetector: SignalDetector = {
   type: 'dormant',
-  detect(currentRepos, _previousRepos, existingSignals): DetectedSignal[] {
+  detect(currentRepos, _previousRepos, existingSignals, repoContexts): DetectedSignal[] {
     const signals: DetectedSignal[] = []
     const cutoff = Date.now() - DEDUP_DAYS * 24 * 60 * 60 * 1000
 
@@ -20,14 +21,17 @@ export const dormantDetector: SignalDetector = {
       if (daysSince < 30) continue
       if (isDuplicate(existingSignals, repo.fullName, cutoff)) continue
 
+      const context = repoContexts.get(repo.fullName)
+      if (context && shouldSuppressSignal('dormant', context)) continue
+
       const severity = daysSince > 60 ? 'critical' : 'warning'
-      const context = getContext(repo)
+      const contextInfo = getContext(repo)
 
       signals.push({
         type: 'dormant',
         severity,
         title: `${repo.name} appears dormant`,
-        body: `No commits in ${daysSince} days.${context}`,
+        body: `No commits in ${daysSince} days.${contextInfo}`,
         repoFullName: repo.fullName,
         metadata: {
           daysSinceLastCommit: daysSince,
