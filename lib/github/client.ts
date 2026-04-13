@@ -6,13 +6,13 @@ import { paginateGraphQL } from '@octokit/plugin-paginate-graphql'
 const ThrottledOctokit = Octokit.plugin(throttling, paginateGraphQL)
 
 let instance: InstanceType<typeof ThrottledOctokit> | null = null
+let instanceTokenSource: 'env' | 'gh' | null = null
 
-function resolveToken(): string {
+function resolveToken(): { token: string; source: 'env' | 'gh' } {
   if (process.env.GITHUB_TOKEN) {
-    return process.env.GITHUB_TOKEN
+    return { token: process.env.GITHUB_TOKEN, source: 'env' }
   }
 
-  // Local convenience: reuse GitHub CLI credentials if available
   try {
     const token = execFileSync('gh', ['auth', 'token'], {
       encoding: 'utf-8',
@@ -21,7 +21,7 @@ function resolveToken(): string {
     }).trim()
     if (token) {
       console.info('[beacon] Using token from GitHub CLI (gh auth token)')
-      return token
+      return { token, source: 'gh' }
     }
   } catch {
     // gh not installed or not authenticated
@@ -33,13 +33,15 @@ function resolveToken(): string {
 }
 
 export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
-  if (instance) return instance
+  // Only cache for stable env var tokens — gh CLI tokens can rotate
+  if (instance && instanceTokenSource === 'env') return instance
 
-  const token = resolveToken()
+  const { token, source } = resolveToken()
 
+  instanceTokenSource = source
   instance = new ThrottledOctokit({
     auth: token,
-    userAgent: 'beacon/0.1.0',
+    userAgent: 'signals/0.1.0',
     throttle: {
       onRateLimit: (retryAfter, options, _octokit, retryCount) => {
         const opts = options as { method: string; url: string }

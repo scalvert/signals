@@ -1,15 +1,18 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { repos, pullRequests, syncLog } from '@/lib/db/schema'
+import { getRepos } from '@/lib/db/queries'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo } from '@/lib/scoring/engine'
+import { runSignalDetection } from '@/lib/signals/engine'
 import type { Workspace } from '@/types/workspace'
 import type { RepoSnapshot } from '@/lib/scoring/types'
 
 export async function syncWorkspace(workspace: Workspace): Promise<{
   repoCount: number
   prCount: number
+  signalCount: number
 }> {
   const now = new Date().toISOString()
 
@@ -25,6 +28,9 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     .get()
 
   try {
+    // Capture previous state for signal detection
+    const previousRepos = getRepos(workspace.id)
+
     // Fetch data from GitHub
     const [rawRepos, rawPRs] = await Promise.all([
       fetchReposForWorkspace(workspace.sources),
@@ -103,6 +109,9 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
         .run()
     }
 
+    // Detect signals by comparing previous and current state
+    const signalCount = runSignalDetection(workspace.id, previousRepos)
+
     // Update sync log
     db.update(syncLog)
       .set({
@@ -113,7 +122,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
       .where(eq(syncLog.id, logEntry.id))
       .run()
 
-    return { repoCount: rawRepos.length, prCount: rawPRs.length }
+    return { repoCount: rawRepos.length, prCount: rawPRs.length, signalCount }
   } catch (err) {
     db.update(syncLog)
       .set({
