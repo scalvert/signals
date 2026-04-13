@@ -18,7 +18,7 @@ export function StatCard({
 }) {
   const content = (
     <div className={cn(
-      'bg-card border border-border rounded-lg p-4 flex flex-col gap-2 min-h-[120px]',
+      'bg-card border border-border rounded-lg p-4 flex flex-col gap-2 h-full',
       href && 'hover:border-foreground/20 hover:shadow-sm transition-all cursor-pointer',
     )}>
       <div className="flex items-center justify-between">
@@ -28,12 +28,12 @@ export function StatCard({
         </div>
       </div>
       <div className="text-[32px] font-bold text-foreground leading-none">{value}</div>
-      {sub && <div className="text-[11px] text-muted-foreground">{sub}</div>}
+      <div className="text-[11px] text-muted-foreground mt-auto">{sub ?? '\u00A0'}</div>
     </div>
   )
 
   if (href) {
-    return <Link href={href}>{content}</Link>
+    return <Link href={href} className="h-full">{content}</Link>
   }
 
   return content

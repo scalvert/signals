@@ -34,21 +34,17 @@ export function TopBar({ workspaceSlug, syncStatus, onSync, syncing }: TopBarPro
         <p className="text-[12px] text-muted-foreground leading-tight">{meta.subtitle}</p>
       </div>
       <div className="flex items-center gap-3">
-        {syncStatus && (
+        {syncStatus && !syncing && (
           <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
             {syncStatus.status === 'success' ? (
               <Check className="w-3.5 h-3.5 text-[var(--health-a)]" />
             ) : syncStatus.status === 'error' ? (
               <AlertCircle className="w-3.5 h-3.5 text-[var(--health-d)]" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            )}
+            ) : null}
             <span>
-              {syncStatus.status === 'running'
-                ? 'Syncing...'
-                : syncStatus.completedAt
-                  ? `Synced ${formatRelativeDate(syncStatus.completedAt)}`
-                  : 'Not synced'}
+              {syncStatus.completedAt
+                ? `Synced ${formatRelativeDate(syncStatus.completedAt)}`
+                : 'Not synced'}
             </span>
           </div>
         )}
