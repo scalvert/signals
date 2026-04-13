@@ -47,7 +47,7 @@ export function WorkspaceShell({
       <Sidebar workspace={workspace} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
-          workspaceSlug={workspace.slug}
+          workspace={workspace}
           syncStatus={effectiveSyncStatus}
           onSync={handleSync}
           syncing={syncing}

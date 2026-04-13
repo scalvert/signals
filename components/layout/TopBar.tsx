@@ -4,7 +4,8 @@ import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { RefreshCw, Check, AlertCircle, Sun, Moon } from 'lucide-react'
 import { cn, formatRelativeDate } from '@/lib/utils'
-import type { SyncStatus } from '@/types/workspace'
+import { AddMenu } from './AddMenu'
+import type { SyncStatus, Workspace } from '@/types/workspace'
 
 const screenTitles: Record<string, { title: string; subtitle: string }> = {
   '': { title: 'Dashboard', subtitle: 'Overview of your workspace' },
@@ -16,13 +17,14 @@ const screenTitles: Record<string, { title: string; subtitle: string }> = {
 }
 
 interface TopBarProps {
-  workspaceSlug: string
+  workspace: Workspace
   syncStatus: SyncStatus | null
   onSync?: () => void
   syncing?: boolean
 }
 
-export function TopBar({ workspaceSlug, syncStatus, onSync, syncing }: TopBarProps) {
+export function TopBar({ workspace, syncStatus, onSync, syncing }: TopBarProps) {
+  const workspaceSlug = workspace.slug
   const pathname = usePathname()
   const { resolvedTheme, setTheme } = useTheme()
   const basePath = `/workspace/${workspaceSlug}`
@@ -58,6 +60,7 @@ export function TopBar({ workspaceSlug, syncStatus, onSync, syncing }: TopBarPro
           <RefreshCw className={cn('w-3.5 h-3.5', syncing && 'animate-spin')} />
           {syncing ? 'Syncing...' : 'Sync now'}
         </button>
+        <AddMenu workspace={workspace} />
         <button
           onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
           className="h-8 w-8 flex items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-muted transition-colors"
