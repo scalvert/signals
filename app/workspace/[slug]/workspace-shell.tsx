@@ -9,12 +9,14 @@ import type { Workspace, SyncStatus } from '@/types/workspace'
 
 interface WorkspaceShellProps {
   workspace: Workspace
+  allWorkspaces: Workspace[]
   syncStatus: SyncStatus | null
   children: React.ReactNode
 }
 
 export function WorkspaceShell({
   workspace,
+  allWorkspaces,
   syncStatus: initialSyncStatus,
   children,
 }: WorkspaceShellProps) {
@@ -44,7 +46,7 @@ export function WorkspaceShell({
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-sans">
-      <Sidebar workspace={workspace} />
+      <Sidebar workspace={workspace} allWorkspaces={allWorkspaces} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           workspace={workspace}

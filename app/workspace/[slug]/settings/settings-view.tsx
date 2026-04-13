@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, GitBranch, Eye, EyeOff, Search } from 'lucide-react'
+import { Building2, GitBranch, Eye, EyeOff, Search, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { WorkspaceDialog } from '@/components/workspace/WorkspaceDialog'
 import type { Workspace } from '@/types/workspace'
 
 interface SettingsViewProps {
@@ -13,6 +14,7 @@ interface SettingsViewProps {
 
 export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
   const router = useRouter()
+  const [editOpen, setEditOpen] = useState(false)
   const [excluded, setExcluded] = useState<Set<string>>(
     new Set(workspace.excludedRepos),
   )
@@ -54,9 +56,18 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
       </h2>
 
       <div className="bg-card border border-border rounded-lg p-4 mb-6">
-        <h3 className="text-[13px] font-semibold text-foreground mb-2">
-          Details
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-[13px] font-semibold text-foreground">
+            Details
+          </h3>
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-border text-foreground hover:bg-muted transition-colors"
+          >
+            <Pencil className="w-3 h-3" />
+            Edit
+          </button>
+        </div>
         <div className="text-sm text-muted-foreground">
           <p className="mb-2">
             <strong className="text-foreground">Name:</strong>{' '}
@@ -173,6 +184,12 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
           </div>
         )}
       </div>
+
+      <WorkspaceDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        workspace={workspace}
+      />
     </div>
   )
 }

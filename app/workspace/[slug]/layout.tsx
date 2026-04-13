@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getLatestSync } from '@/lib/db/queries'
+import { getWorkspaceBySlug, getWorkspaces, getLatestSync } from '@/lib/db/queries'
 import { WorkspaceShell } from './workspace-shell'
 
 export default async function WorkspaceLayout({
@@ -13,10 +13,11 @@ export default async function WorkspaceLayout({
   const workspace = getWorkspaceBySlug(slug)
   if (!workspace) notFound()
 
+  const allWorkspaces = getWorkspaces()
   const syncStatus = getLatestSync(workspace.id)
 
   return (
-    <WorkspaceShell workspace={workspace} syncStatus={syncStatus}>
+    <WorkspaceShell workspace={workspace} allWorkspaces={allWorkspaces} syncStatus={syncStatus}>
       {children}
     </WorkspaceShell>
   )
