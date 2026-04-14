@@ -11,7 +11,7 @@ export type SignalType =
   | 'dormant'
 
 export interface WorkspaceSource {
-  type: 'org' | 'repo'
+  type: 'org' | 'user' | 'repo'
   value: string
 }
 

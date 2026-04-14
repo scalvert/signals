@@ -31,12 +31,10 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     // Capture previous state for signal detection
     const previousRepos = getRepos(workspace.id)
 
-    // Fetch data from GitHub
+    // Fetch data from GitHub (sequential to avoid concurrent pagination 502s)
     const excluded = new Set(workspace.excludedRepos)
-    const [allRepos, allPRs] = await Promise.all([
-      fetchReposForWorkspace(workspace.sources),
-      fetchPRsForWorkspace(workspace.sources),
-    ])
+    const allRepos = await fetchReposForWorkspace(workspace.sources)
+    const allPRs = await fetchPRsForWorkspace(workspace.sources)
     const rawRepos = allRepos.filter((r) => !excluded.has(r.fullName))
     const rawPRs = allPRs.filter((pr) => !excluded.has(pr.repoFullName))
 

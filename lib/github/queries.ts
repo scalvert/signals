@@ -2,7 +2,7 @@ export const ORG_REPOS_QUERY = `
   query OrgRepos($org: String!, $cursor: String) {
     organization(login: $org) {
       repositories(
-        first: 100
+        first: 20
         after: $cursor
         orderBy: { field: UPDATED_AT, direction: DESC }
       ) {
@@ -38,7 +38,7 @@ export const USER_REPOS_QUERY = `
   query UserRepos($user: String!, $cursor: String) {
     user(login: $user) {
       repositories(
-        first: 100
+        first: 20
         after: $cursor
         ownerAffiliations: OWNER
         orderBy: { field: UPDATED_AT, direction: DESC }

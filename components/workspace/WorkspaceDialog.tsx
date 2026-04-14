@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Building2, GitBranch, X } from 'lucide-react'
+import { Plus, Trash2, Building2, GitBranch, User, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Workspace, WorkspaceSource } from '@/types/workspace'
 
@@ -18,7 +18,7 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
   const [name, setName] = useState('')
   const [sources, setSources] = useState<WorkspaceSource[]>([])
   const [sourceInput, setSourceInput] = useState('')
-  const [sourceType, setSourceType] = useState<'org' | 'repo'>('org')
+  const [sourceType, setSourceType] = useState<'org' | 'user' | 'repo'>('org')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -152,6 +152,19 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
                 </button>
                 <button
                   type="button"
+                  onClick={() => setSourceType('user')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
+                    sourceType === 'user'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <User className="h-3 w-3" />
+                  User
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSourceType('repo')}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
@@ -175,7 +188,7 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
                   }
                 }}
                 placeholder={
-                  sourceType === 'org' ? 'e.g. gleanwork' : 'e.g. vercel/next.js'
+                  sourceType === 'org' ? 'e.g. gleanwork' : sourceType === 'user' ? 'e.g. scalvert' : 'e.g. vercel/next.js'
                 }
                 className="h-8 flex-1 rounded-md border border-input bg-background px-3 text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               />
@@ -198,6 +211,8 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
                     <div className="flex items-center gap-2">
                       {source.type === 'org' ? (
                         <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : source.type === 'user' ? (
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
                       ) : (
                         <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
                       )}

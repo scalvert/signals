@@ -14,6 +14,7 @@ import {
   Wrench,
   Check,
   Loader2,
+  XCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -30,13 +31,14 @@ const quickChips = [
 
 function ToolCallDisplay({ part }: { part: Record<string, unknown> }) {
   const [expanded, setExpanded] = useState(false)
-  const toolName = (part.toolName as string) ?? 'tool'
+  const toolType = part.type as string
+  const toolName = toolType.replace('tool-', '').replace(/_/g, ' ')
   const state = part.state as string | undefined
-  const args = part.args as Record<string, unknown> | undefined
-  const result = part.result as unknown
+  const input = part.input as Record<string, unknown> | undefined
+  const output = part.output as unknown
 
-  const isDone = state === 'result'
-  const displayName = toolName.replace(/_/g, ' ')
+  const isDone = state === 'output-available'
+  const isError = state === 'output-error'
 
   return (
     <div className="my-1.5 rounded-md border border-border bg-background text-foreground">
@@ -46,11 +48,13 @@ function ToolCallDisplay({ part }: { part: Record<string, unknown> }) {
       >
         {isDone ? (
           <Check className="w-3 h-3 text-[var(--health-a)] shrink-0" />
+        ) : isError ? (
+          <XCircle className="w-3 h-3 text-[var(--health-d)] shrink-0" />
         ) : (
           <Loader2 className="w-3 h-3 text-muted-foreground animate-spin shrink-0" />
         )}
         <Wrench className="w-3 h-3 text-muted-foreground shrink-0" />
-        <span className="font-medium truncate">{displayName}</span>
+        <span className="font-medium truncate">{toolName}</span>
         <ChevronDown
           className={cn(
             'w-3 h-3 text-muted-foreground ml-auto shrink-0 transition-transform',
@@ -60,23 +64,33 @@ function ToolCallDisplay({ part }: { part: Record<string, unknown> }) {
       </button>
       {expanded && (
         <div className="px-2.5 pb-2 border-t border-border">
-          {args && Object.keys(args).length > 0 && (
+          {input && Object.keys(input).length > 0 && (
             <div className="mt-2">
               <div className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                 Request
               </div>
               <pre className="text-[10px] bg-muted rounded p-2 overflow-x-auto max-h-[120px] overflow-y-auto">
-                {JSON.stringify(args, null, 2)}
+                {JSON.stringify(input, null, 2)}
               </pre>
             </div>
           )}
-          {isDone && result !== undefined && (
+          {isDone && output !== undefined && (
             <div className="mt-2">
               <div className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
                 Response
               </div>
               <pre className="text-[10px] bg-muted rounded p-2 overflow-x-auto max-h-[200px] overflow-y-auto">
-                {JSON.stringify(result, null, 2)}
+                {JSON.stringify(output, null, 2)}
+              </pre>
+            </div>
+          )}
+          {isError && (
+            <div className="mt-2">
+              <div className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">
+                Error
+              </div>
+              <pre className="text-[10px] bg-muted rounded p-2 overflow-x-auto text-[var(--health-d)]">
+                {(part.errorText as string) ?? 'Unknown error'}
               </pre>
             </div>
           )}

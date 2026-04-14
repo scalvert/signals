@@ -33,6 +33,9 @@ export async function fetchPRsForWorkspace(
     if (source.type === 'org') {
       const orgPRs = await fetchOrgPRs(source.value)
       prs.push(...orgPRs)
+    } else if (source.type === 'user') {
+      const userPRs = await fetchUserPRs(source.value)
+      prs.push(...userPRs)
     } else {
       const [owner, name] = source.value.split('/')
       if (owner && name) {
@@ -55,51 +58,49 @@ export async function fetchPRsForWorkspace(
 async function fetchOrgPRs(login: string): Promise<RawPullRequest[]> {
   const octokit = getOctokit()
 
-  try {
-    const result = await octokit.graphql.paginate<{
-      organization: {
-        repositories: {
-          nodes: Array<{
-            nameWithOwner: string
-            pullRequests: { nodes: GitHubPRNode[] }
-          }>
-          pageInfo: { hasNextPage: boolean; endCursor: string }
-        }
-      }
-    }>(ORG_PRS_QUERY, { org: login })
-
-    const prs: RawPullRequest[] = []
-    for (const repo of result.organization.repositories.nodes) {
-      for (const pr of repo.pullRequests.nodes) {
-        prs.push(parsePRNode(pr, repo.nameWithOwner))
+  const result = await octokit.graphql.paginate<{
+    organization: {
+      repositories: {
+        nodes: Array<{
+          nameWithOwner: string
+          pullRequests: { nodes: GitHubPRNode[] }
+        }>
+        pageInfo: { hasNextPage: boolean; endCursor: string }
       }
     }
-    return prs
-  } catch (err) {
-    const message = err instanceof Error ? err.message : ''
-    if (!message.includes('Could not resolve to an Organization')) throw err
+  }>(ORG_PRS_QUERY, { org: login })
 
-    console.info(`[signals] "${login}" is not an org, trying user PR query`)
-    const result = await octokit.graphql.paginate<{
-      user: {
-        repositories: {
-          nodes: Array<{
-            nameWithOwner: string
-            pullRequests: { nodes: GitHubPRNode[] }
-          }>
-          pageInfo: { hasNextPage: boolean; endCursor: string }
-        }
-      }
-    }>(USER_PRS_QUERY, { user: login })
-
-    const prs: RawPullRequest[] = []
-    for (const repo of result.user.repositories.nodes) {
-      for (const pr of repo.pullRequests.nodes) {
-        prs.push(parsePRNode(pr, repo.nameWithOwner))
-      }
+  const prs: RawPullRequest[] = []
+  for (const repo of result.organization.repositories.nodes) {
+    for (const pr of repo.pullRequests.nodes) {
+      prs.push(parsePRNode(pr, repo.nameWithOwner))
     }
-    return prs
   }
+  return prs
+}
+
+async function fetchUserPRs(login: string): Promise<RawPullRequest[]> {
+  const octokit = getOctokit()
+
+  const result = await octokit.graphql.paginate<{
+    user: {
+      repositories: {
+        nodes: Array<{
+          nameWithOwner: string
+          pullRequests: { nodes: GitHubPRNode[] }
+        }>
+        pageInfo: { hasNextPage: boolean; endCursor: string }
+      }
+    }
+  }>(USER_PRS_QUERY, { user: login })
+
+  const prs: RawPullRequest[] = []
+  for (const repo of result.user.repositories.nodes) {
+    for (const pr of repo.pullRequests.nodes) {
+      prs.push(parsePRNode(pr, repo.nameWithOwner))
+    }
+  }
+  return prs
 }
 
 async function fetchSingleRepoPRs(

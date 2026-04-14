@@ -6,11 +6,10 @@ import { paginateGraphQL } from '@octokit/plugin-paginate-graphql'
 const ThrottledOctokit = Octokit.plugin(throttling, paginateGraphQL)
 
 let instance: InstanceType<typeof ThrottledOctokit> | null = null
-let instanceTokenSource: 'env' | 'gh' | null = null
 
-function resolveToken(): { token: string; source: 'env' | 'gh' } {
+function resolveToken(): string {
   if (process.env.GITHUB_TOKEN) {
-    return { token: process.env.GITHUB_TOKEN, source: 'env' }
+    return process.env.GITHUB_TOKEN
   }
 
   try {
@@ -20,8 +19,8 @@ function resolveToken(): { token: string; source: 'env' | 'gh' } {
       stdio: ['pipe', 'pipe', 'pipe'],
     }).trim()
     if (token) {
-      console.info('[beacon] Using token from GitHub CLI (gh auth token)')
-      return { token, source: 'gh' }
+      console.info('[signals] Using token from GitHub CLI (gh auth token)')
+      return token
     }
   } catch {
     // gh not installed or not authenticated
@@ -33,12 +32,10 @@ function resolveToken(): { token: string; source: 'env' | 'gh' } {
 }
 
 export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
-  // Only cache for stable env var tokens — gh CLI tokens can rotate
-  if (instance && instanceTokenSource === 'env') return instance
+  if (instance) return instance
 
-  const { token, source } = resolveToken()
+  const token = resolveToken()
 
-  instanceTokenSource = source
   instance = new ThrottledOctokit({
     auth: token,
     userAgent: 'signals/0.1.0',

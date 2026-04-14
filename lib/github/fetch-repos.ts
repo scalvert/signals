@@ -30,6 +30,9 @@ export async function fetchReposForWorkspace(
     if (source.type === 'org') {
       const orgRepos = await fetchOrgRepos(source.value)
       repos.push(...orgRepos)
+    } else if (source.type === 'user') {
+      const userRepos = await fetchUserRepos(source.value)
+      repos.push(...userRepos)
     } else {
       const [owner, name] = source.value.split('/')
       if (owner && name) {
@@ -51,34 +54,31 @@ export async function fetchReposForWorkspace(
 async function fetchOrgRepos(login: string): Promise<RawRepo[]> {
   const octokit = getOctokit()
 
-  // Try as organization first, fall back to user account
-  try {
-    const result = await octokit.graphql.paginate<{
-      organization: {
-        repositories: {
-          nodes: GitHubRepoNode[]
-          pageInfo: { hasNextPage: boolean; endCursor: string }
-        }
+  const result = await octokit.graphql.paginate<{
+    organization: {
+      repositories: {
+        nodes: GitHubRepoNode[]
+        pageInfo: { hasNextPage: boolean; endCursor: string }
       }
-    }>(ORG_REPOS_QUERY, { org: login })
+    }
+  }>(ORG_REPOS_QUERY, { org: login })
 
-    return result.organization.repositories.nodes.map(parseRepoNode)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : ''
-    if (!message.includes('Could not resolve to an Organization')) throw err
+  return result.organization.repositories.nodes.map(parseRepoNode)
+}
 
-    console.info(`[signals] "${login}" is not an org, trying as user account`)
-    const result = await octokit.graphql.paginate<{
-      user: {
-        repositories: {
-          nodes: GitHubRepoNode[]
-          pageInfo: { hasNextPage: boolean; endCursor: string }
-        }
+async function fetchUserRepos(login: string): Promise<RawRepo[]> {
+  const octokit = getOctokit()
+
+  const result = await octokit.graphql.paginate<{
+    user: {
+      repositories: {
+        nodes: GitHubRepoNode[]
+        pageInfo: { hasNextPage: boolean; endCursor: string }
       }
-    }>(USER_REPOS_QUERY, { user: login })
+    }
+  }>(USER_REPOS_QUERY, { user: login })
 
-    return result.user.repositories.nodes.map(parseRepoNode)
-  }
+  return result.user.repositories.nodes.map(parseRepoNode)
 }
 
 async function fetchSingleRepo(
