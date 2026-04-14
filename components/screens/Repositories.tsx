@@ -6,18 +6,12 @@ import { cn } from '@/lib/utils'
 import { formatRelativeDate } from '@/lib/utils'
 import { HealthBadge } from '@/components/shared/HealthBadge'
 import { PillarBar } from '@/components/shared/PillarBar'
+import { MultiSelectFilter } from '@/components/shared/MultiSelectFilter'
 import { languagePillColors } from '@/lib/constants'
-import type { Repo, TriageStatus } from '@/types/workspace'
+import type { Repo } from '@/types/workspace'
 
-type SortKey = 'name' | 'score' | 'stars' | 'openIssues' | 'openPRs' | 'lastCommitAt'
+type SortKey = 'name' | 'org' | 'score' | 'stars' | 'openIssues' | 'openPRs' | 'lastCommitAt'
 type SortDir = 'asc' | 'desc'
-
-const healthFilters: { label: string; value: TriageStatus | null }[] = [
-  { label: 'All', value: null },
-  { label: 'Healthy', value: 'healthy' },
-  { label: 'Watch', value: 'watch' },
-  { label: 'Critical', value: 'critical' },
-]
 
 const pillarLabels: Record<string, string> = {
   activity: 'Activity',
@@ -212,18 +206,56 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
   )
 }
 
+function getOrg(repo: Repo): string {
+  return repo.fullName.split('/')[0]
+}
+
 export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceId: number }) {
   const [search, setSearch] = useState('')
-  const [healthFilter, setHealthFilter] = useState<TriageStatus | null>(null)
+  const [orgFilter, setOrgFilter] = useState<Set<string>>(new Set())
+  const [langFilter, setLangFilter] = useState<Set<string>>(new Set())
+  const [healthFilter, setHealthFilter] = useState<Set<string>>(new Set())
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null)
 
-  const languages = useMemo(() => {
-    const langs = new Set(repos.map((r) => r.language).filter(Boolean))
-    return ['All', ...Array.from(langs)] as string[]
+  const orgOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const r of repos) {
+      const org = getOrg(r)
+      counts.set(org, (counts.get(org) ?? 0) + 1)
+    }
+    return Array.from(counts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value))
   }, [repos])
-  const [langFilter, setLangFilter] = useState('All')
+
+  const langOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const r of repos) {
+      const lang = r.language ?? 'Unknown'
+      counts.set(lang, (counts.get(lang) ?? 0) + 1)
+    }
+    return Array.from(counts.entries())
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => a.value.localeCompare(b.value))
+  }, [repos])
+
+  const healthColors: Record<string, string> = {
+    healthy: 'var(--health-a)',
+    watch: 'var(--health-c)',
+    critical: 'var(--health-d)',
+  }
+
+  const healthOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const r of repos) {
+      counts.set(r.triage, (counts.get(r.triage) ?? 0) + 1)
+    }
+    return ['healthy', 'watch', 'critical']
+      .filter((t) => counts.has(t))
+      .map((value) => ({ value, count: counts.get(value) ?? 0, color: healthColors[value] }))
+  }, [repos])
 
   const filteredRepos = useMemo(() => {
     let result = repos
@@ -233,12 +265,14 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
         (r) => r.name.toLowerCase().includes(q) || r.description?.toLowerCase().includes(q),
       )
     }
-    if (langFilter !== 'All') result = result.filter((r) => r.language === langFilter)
-    if (healthFilter) result = result.filter((r) => r.triage === healthFilter)
+    if (orgFilter.size > 0) result = result.filter((r) => orgFilter.has(getOrg(r)))
+    if (langFilter.size > 0) result = result.filter((r) => langFilter.has(r.language ?? 'Unknown'))
+    if (healthFilter.size > 0) result = result.filter((r) => healthFilter.has(r.triage))
 
     return [...result].sort((a, b) => {
       let cmp = 0
       if (sortKey === 'name') cmp = a.name.localeCompare(b.name)
+      else if (sortKey === 'org') cmp = getOrg(a).localeCompare(getOrg(b))
       else if (sortKey === 'lastCommitAt') {
         const aDate = a.lastCommitAt ? new Date(a.lastCommitAt).getTime() : 0
         const bDate = b.lastCommitAt ? new Date(b.lastCommitAt).getTime() : 0
@@ -246,7 +280,7 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
       } else cmp = (a[sortKey] as number) - (b[sortKey] as number)
       return sortDir === 'asc' ? cmp : -cmp
     })
-  }, [repos, search, langFilter, healthFilter, sortKey, sortDir])
+  }, [repos, search, orgFilter, langFilter, healthFilter, sortKey, sortDir])
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -270,29 +304,10 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
               className="h-8 pl-8 pr-3 text-[12px] rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring w-64"
             />
           </div>
-          <div className="ml-auto flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium mr-1">Language:</span>
-              {languages.slice(0, 6).map((lang) => (
-                <button key={lang} onClick={() => setLangFilter(lang)}
-                  className={cn('px-2 py-1 rounded text-[11px] font-medium transition-colors',
-                    langFilter === lang ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                  )}>
-                  {lang}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium mr-1">Health:</span>
-              {healthFilters.map((h) => (
-                <button key={h.label} onClick={() => setHealthFilter(h.value)}
-                  className={cn('px-2 py-1 rounded text-[11px] font-medium transition-colors',
-                    healthFilter === h.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-muted/80',
-                  )}>
-                  {h.label}
-                </button>
-              ))}
-            </div>
+          <div className="ml-auto flex items-center gap-2">
+            <MultiSelectFilter label="Org" options={orgOptions} selected={orgFilter} onChange={setOrgFilter} />
+            <MultiSelectFilter label="Language" options={langOptions} selected={langFilter} onChange={setLangFilter} />
+            <MultiSelectFilter label="Health" options={healthOptions} selected={healthFilter} onChange={setHealthFilter} />
           </div>
         </div>
         <div className="bg-card border border-border rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
@@ -300,7 +315,7 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 z-10 bg-muted/95 backdrop-blur-sm">
                 <tr className="border-b border-border">
-                  {([['name', 'Repository'], ['score', 'Health'], ['stars', 'Stars'], ['openIssues', 'Issues'], ['openPRs', 'PRs'], ['lastCommitAt', 'Last updated']] as const).map(([key, label]) => (
+                  {([['name', 'Repository'], ['org', 'Org'], ['score', 'Health'], ['stars', 'Stars'], ['openIssues', 'Issues'], ['openPRs', 'PRs'], ['lastCommitAt', 'Last updated']] as const).map(([key, label]) => (
                     <th key={key} onClick={() => toggleSort(key)}
                       className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide cursor-pointer hover:text-foreground select-none">
                       {label} <SortIcon col={key} />
@@ -318,6 +333,11 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
                         {repo.isPrivate && <Lock className="w-3 h-3 text-muted-foreground" />}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[280px]">{repo.description}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px] text-muted-foreground border border-border rounded px-1.5 py-0.5 font-mono">
+                        {getOrg(repo)}
+                      </span>
                     </td>
                     <td className="px-4 py-3"><HealthBadge grade={repo.grade} score={repo.score} /></td>
                     <td className="px-4 py-3"><span className="flex items-center gap-1 text-muted-foreground"><Star className="w-3 h-3" />{repo.stars}</span></td>
