@@ -34,7 +34,12 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
   function addSource() {
     const value = sourceInput.trim()
     if (!value) return
+    if (sourceType === 'repo' && !value.includes('/')) {
+      setError('Repo must be in owner/repo format (e.g. vercel/next.js)')
+      return
+    }
     if (sources.some((s) => s.type === sourceType && s.value === value)) return
+    setError(null)
     setSources([...sources, { type: sourceType, value }])
     setSourceInput('')
   }
