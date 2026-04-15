@@ -86,6 +86,23 @@ export const syncLog = sqliteTable('sync_log', {
   error: text('error'),
 })
 
+export const tasks = sqliteTable('tasks', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  repoFullName: text('repo_full_name').notNull(),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  sourceType: text('source_type').notNull(),
+  sourceId: text('source_id').notNull(),
+  status: text('status').notNull().default('pending'),
+  provider: text('provider'),
+  providerRef: text('provider_ref'),
+  notes: text('notes').notNull().default('[]'),
+  createdAt: text('created_at').notNull(),
+  dispatchedAt: text('dispatched_at'),
+  completedAt: text('completed_at'),
+})
+
 export const scoreHistory = sqliteTable('score_history', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   workspaceId: integer('workspace_id').notNull(),

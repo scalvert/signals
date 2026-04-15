@@ -1,6 +1,6 @@
 import { eq, desc, sql } from 'drizzle-orm'
 import { db } from './client'
-import { workspaces, repos, pullRequests, signals, syncLog, repoContext, settings, scoreHistory } from './schema'
+import { workspaces, repos, pullRequests, signals, syncLog, repoContext, settings, scoreHistory, tasks } from './schema'
 import type {
   Workspace,
   WorkspaceSource,
@@ -11,6 +11,9 @@ import type {
   SyncStatus,
   RepoPillars,
   RepoContext,
+  Task,
+  TaskStatus,
+  TaskNote,
 } from '@/types/workspace'
 
 export function getWorkspaces(): Workspace[] {
@@ -355,4 +358,106 @@ export function getScoreHistory(
       pillars: JSON.parse(r.pillars) as RepoPillars,
       syncedAt: r.syncedAt,
     }))
+}
+
+function parseTaskRow(row: typeof tasks.$inferSelect): Task {
+  return {
+    ...row,
+    sourceType: row.sourceType as Task['sourceType'],
+    status: row.status as TaskStatus,
+    provider: row.provider ?? null,
+    providerRef: row.providerRef ?? null,
+    dispatchedAt: row.dispatchedAt ?? null,
+    completedAt: row.completedAt ?? null,
+    notes: JSON.parse(row.notes) as TaskNote[],
+  }
+}
+
+export function getTasks(
+  workspaceId: number,
+  options?: { status?: TaskStatus; repoFullName?: string },
+): Task[] {
+  const rows = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.workspaceId, workspaceId))
+    .orderBy(desc(tasks.createdAt))
+    .all()
+
+  return rows
+    .map(parseTaskRow)
+    .filter((t) => !options?.status || t.status === options.status)
+    .filter((t) => !options?.repoFullName || t.repoFullName === options.repoFullName)
+}
+
+export function getTask(taskId: number): Task | undefined {
+  const row = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.id, taskId))
+    .get()
+  if (!row) return undefined
+  return parseTaskRow(row)
+}
+
+export function createTask(data: {
+  workspaceId: number
+  repoFullName: string
+  title: string
+  description: string
+  sourceType: 'signal' | 'check'
+  sourceId: string
+}): Task {
+  const now = new Date().toISOString()
+  const row = db
+    .insert(tasks)
+    .values({
+      ...data,
+      status: 'pending',
+      createdAt: now,
+    })
+    .returning()
+    .get()
+  return parseTaskRow(row)
+}
+
+export function updateTaskStatus(
+  taskId: number,
+  status: TaskStatus,
+  updates?: { provider?: string; providerRef?: string },
+): Task | undefined {
+  const now = new Date().toISOString()
+  const set: Record<string, unknown> = { status }
+  if (status === 'dispatched') set.dispatchedAt = now
+  if (status === 'completed' || status === 'verified' || status === 'failed') set.completedAt = now
+  if (updates?.provider) set.provider = updates.provider
+  if (updates?.providerRef) set.providerRef = updates.providerRef
+
+  const row = db
+    .update(tasks)
+    .set(set)
+    .where(eq(tasks.id, taskId))
+    .returning()
+    .get()
+  if (!row) return undefined
+  return parseTaskRow(row)
+}
+
+export function addTaskNote(
+  taskId: number,
+  text: string,
+  source: 'agent' | 'system',
+): Task | undefined {
+  const task = getTask(taskId)
+  if (!task) return undefined
+
+  const notes: TaskNote[] = [...task.notes, { text, timestamp: new Date().toISOString(), source }]
+  const row = db
+    .update(tasks)
+    .set({ notes: JSON.stringify(notes) })
+    .where(eq(tasks.id, taskId))
+    .returning()
+    .get()
+  if (!row) return undefined
+  return parseTaskRow(row)
 }

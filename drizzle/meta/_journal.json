@@ -57,6 +57,13 @@
       "when": 1776279585188,
       "tag": "0007_previous_tempest",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1776287274061,
+      "tag": "0008_tidy_tombstone",
+      "breakpoints": true
     }
   ]
 }

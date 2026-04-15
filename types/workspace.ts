@@ -108,6 +108,31 @@ export interface RepoContext {
   updatedAt: string
 }
 
+export type TaskStatus = 'pending' | 'dispatched' | 'completed' | 'verified' | 'failed'
+
+export interface TaskNote {
+  text: string
+  timestamp: string
+  source: 'agent' | 'system'
+}
+
+export interface Task {
+  id: number
+  workspaceId: number
+  repoFullName: string
+  title: string
+  description: string
+  sourceType: 'signal' | 'check'
+  sourceId: string
+  status: TaskStatus
+  provider: string | null
+  providerRef: string | null
+  notes: TaskNote[]
+  createdAt: string
+  dispatchedAt: string | null
+  completedAt: string | null
+}
+
 export interface Workspace {
   id: number
   name: string
