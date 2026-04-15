@@ -81,6 +81,7 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
         const created = await res.json()
         onClose()
         router.push(`/workspace/${created.slug}`)
+        fetch(`/api/sync?slug=${created.slug}`, { method: 'POST' })
       }
     } catch {
       setError(isEditing ? 'Failed to update workspace' : 'Failed to create workspace')
