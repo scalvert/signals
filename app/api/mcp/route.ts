@@ -121,6 +121,12 @@ export async function GET() {
       'get_external_prs',
       'get_repo_health',
       'get_signal_feed',
+      'get_repo_signals',
+      'get_repo_actionable_items',
+      'get_task_details',
+      'create_task_from_item',
+      'update_task_status',
+      'add_task_note',
     ],
   }), {
     headers: { 'Content-Type': 'application/json' },
