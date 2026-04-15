@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Hammer, ExternalLink } from 'lucide-react'
+import { Hammer, ExternalLink, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { MultiSelectFilter } from '@/components/shared/MultiSelectFilter'
@@ -22,6 +22,15 @@ function StatusBadge({ status }: { status: TaskStatus }) {
       {config.label}
     </span>
   )
+}
+
+async function handleDispatch(taskId: number, provider?: string) {
+  await fetch(`/api/tasks/${taskId}/dispatch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider }),
+  })
+  window.location.reload()
 }
 
 export function Work({ tasks }: { tasks: Task[] }) {
@@ -104,7 +113,18 @@ export function Work({ tasks }: { tasks: Task[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={task.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={task.status} />
+                    {task.status === 'pending' && (
+                      <button
+                        onClick={() => handleDispatch(task.id)}
+                        className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline transition-colors"
+                      >
+                        <Play className="w-3 h-3" />
+                        Dispatch
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-[12px] text-muted-foreground">
                   {task.provider ?? '—'}
