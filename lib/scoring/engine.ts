@@ -19,7 +19,7 @@ interface ScoreResult {
   checkResults: Record<string, CheckResultData>
 }
 
-export function scoreRepo(repo: RepoSnapshot): ScoreResult {
+export function scoreRepo(repo: RepoSnapshot, dismissedChecks?: Set<string>): ScoreResult {
   const results: Record<string, CheckResult> = {}
   const pillarScores: Record<Pillar, { total: number; weight: number }> = {
     activity: { total: 0, weight: 0 },
@@ -32,6 +32,7 @@ export function scoreRepo(repo: RepoSnapshot): ScoreResult {
 
   for (const check of ALL_CHECKS) {
     if (!check.applies(repo)) continue
+    if (dismissedChecks?.has(check.id)) continue
 
     const result = check.run(repo)
     results[check.id] = result

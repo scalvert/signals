@@ -101,6 +101,7 @@ export const repoContext = sqliteTable('repo_context', {
   workspaceId: integer('workspace_id').notNull(),
   repoFullName: text('repo_full_name').notNull(),
   context: text('context').notNull(),
+  dismissedChecks: text('dismissed_checks').notNull().default('[]'),
   updatedAt: text('updated_at').notNull(),
 }, (table) => [
   uniqueIndex('repo_context_workspace_repo_idx').on(table.workspaceId, table.repoFullName),

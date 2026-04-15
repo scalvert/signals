@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
-import { getRepos } from '@/lib/db/queries'
+import { getRepos, getDismissedChecks } from '@/lib/db/queries'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo } from '@/lib/scoring/engine'
@@ -91,7 +91,8 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
         language: raw.language,
       }
 
-      const scored = scoreRepo(snapshot)
+      const dismissed = getDismissedChecks(workspace.id, raw.fullName)
+      const scored = scoreRepo(snapshot, dismissed)
 
       db.insert(repos)
         .values({

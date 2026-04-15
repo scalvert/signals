@@ -20,11 +20,16 @@ const pillarLabels: Record<string, string> = {
   security: 'Security',
 }
 
-function CheckResultItem({ checkId, result }: { checkId: string; result: Repo['checkResults'][string] }) {
+function CheckResultItem({ checkId, result, isDismissed, onToggleDismiss }: {
+  checkId: string
+  result: Repo['checkResults'][string]
+  isDismissed?: boolean
+  onToggleDismiss?: () => void
+}) {
   const passed = result.score >= 0.7
   const partial = result.score >= 0.4 && result.score < 0.7
   return (
-    <div className="flex items-start gap-2.5 py-2">
+    <div className={cn('flex items-start gap-2.5 py-2', isDismissed && 'opacity-40')}>
       <div className="mt-0.5 shrink-0">
         {passed ? (
           <CheckCircle2 className="w-4 h-4 text-[var(--health-a)]" />
@@ -37,10 +42,20 @@ function CheckResultItem({ checkId, result }: { checkId: string; result: Repo['c
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-[12px] font-medium text-foreground">{result.checkName}</span>
-          <span className="text-[11px] text-muted-foreground font-mono">{Math.round(result.score * 100)}%</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground font-mono">{Math.round(result.score * 100)}%</span>
+            {onToggleDismiss && (
+              <button
+                onClick={onToggleDismiss}
+                className="text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {isDismissed ? 'Restore' : 'Dismiss'}
+              </button>
+            )}
+          </div>
         </div>
         <p className="text-[11px] text-muted-foreground mt-0.5">{result.label}</p>
-        {result.actionable && (
+        {!isDismissed && result.actionable && (
           <p className="text-[11px] text-foreground mt-1 bg-muted/50 rounded px-2 py-1.5 leading-relaxed">
             {result.actionable}
           </p>
@@ -109,6 +124,26 @@ function RepoContextEditor({ workspaceId, repoFullName }: { workspaceId: number;
 }
 
 function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspaceId: number; onClose: () => void }) {
+  const [dismissedChecks, setDismissedChecks] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetch(`/api/repo-context?workspaceId=${workspaceId}&repo=${encodeURIComponent(repo.fullName)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setDismissedChecks(new Set(data.context?.dismissedChecks ?? []))
+      })
+  }, [workspaceId, repo.fullName])
+
+  async function toggleCheck(checkId: string) {
+    const res = await fetch('/api/repo-context/checks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspaceId, repoFullName: repo.fullName, checkId }),
+    })
+    const data = await res.json()
+    setDismissedChecks(new Set(data.dismissedChecks))
+  }
+
   const checks = repo.checkResults ?? {}
   const groupedChecks = Object.entries(checks).reduce<Record<string, [string, Repo['checkResults'][string]][]>>(
     (acc, [id, result]) => {
@@ -120,7 +155,8 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
     {},
   )
 
-  const failingChecks = Object.entries(checks).filter(([, r]) => r.score < 0.7)
+  const failingChecks = Object.entries(checks).filter(([id, r]) => r.score < 0.7 && !dismissedChecks.has(id))
+  const dismissedFailingChecks = Object.entries(checks).filter(([id, r]) => r.score < 0.7 && dismissedChecks.has(id))
 
   return (
     <div className="w-[400px] shrink-0 border-l border-border bg-card flex flex-col h-full overflow-hidden">
@@ -174,7 +210,7 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
 
         <RepoContextEditor workspaceId={workspaceId} repoFullName={repo.fullName} />
 
-        {failingChecks.length > 0 && (
+        {(failingChecks.length > 0 || dismissedFailingChecks.length > 0) && (
           <div>
             <h3 className="text-[12px] font-semibold text-foreground uppercase tracking-wide mb-2">
               Actions Needed ({failingChecks.length})
@@ -183,7 +219,12 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
               {failingChecks
                 .sort(([, a], [, b]) => a.score - b.score)
                 .map(([id, result]) => (
-                  <CheckResultItem key={id} checkId={id} result={result} />
+                  <CheckResultItem key={id} checkId={id} result={result} onToggleDismiss={() => toggleCheck(id)} />
+                ))}
+              {dismissedFailingChecks
+                .sort(([, a], [, b]) => a.score - b.score)
+                .map(([id, result]) => (
+                  <CheckResultItem key={id} checkId={id} result={result} isDismissed onToggleDismiss={() => toggleCheck(id)} />
                 ))}
             </div>
           </div>

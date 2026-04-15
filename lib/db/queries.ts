@@ -215,13 +215,18 @@ export function getRepoContext(
   workspaceId: number,
   repoFullName: string,
 ): RepoContext | undefined {
-  return db
+  const row = db
     .select()
     .from(repoContext)
     .where(
       sql`${repoContext.workspaceId} = ${workspaceId} AND ${repoContext.repoFullName} = ${repoFullName}`,
     )
-    .get() as RepoContext | undefined
+    .get()
+  if (!row) return undefined
+  return {
+    ...row,
+    dismissedChecks: JSON.parse(row.dismissedChecks) as string[],
+  }
 }
 
 export function getRepoContextsForWorkspace(
@@ -252,6 +257,45 @@ export function upsertRepoContext(
       .values({ workspaceId, repoFullName, context, updatedAt: now })
       .run()
   }
+}
+
+export function getDismissedChecks(
+  workspaceId: number,
+  repoFullName: string,
+): Set<string> {
+  const ctx = getRepoContext(workspaceId, repoFullName)
+  return new Set(ctx?.dismissedChecks ?? [])
+}
+
+export function toggleDismissedCheck(
+  workspaceId: number,
+  repoFullName: string,
+  checkId: string,
+): string[] {
+  const now = new Date().toISOString()
+  const existing = getRepoContext(workspaceId, repoFullName)
+  const current = new Set(existing?.dismissedChecks ?? [])
+
+  if (current.has(checkId)) {
+    current.delete(checkId)
+  } else {
+    current.add(checkId)
+  }
+
+  const dismissedChecks = JSON.stringify(Array.from(current))
+
+  if (existing) {
+    db.update(repoContext)
+      .set({ dismissedChecks, updatedAt: now })
+      .where(eq(repoContext.id, existing.id))
+      .run()
+  } else {
+    db.insert(repoContext)
+      .values({ workspaceId, repoFullName, context: '', dismissedChecks, updatedAt: now })
+      .run()
+  }
+
+  return Array.from(current)
 }
 
 export function getSetting(key: string): string | undefined {

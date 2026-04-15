@@ -104,6 +104,7 @@ export interface RepoContext {
   workspaceId: number
   repoFullName: string
   context: string
+  dismissedChecks: string[]
   updatedAt: string
 }
 
