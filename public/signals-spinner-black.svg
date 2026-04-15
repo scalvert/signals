@@ -1,0 +1,49 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+<style>
+  .arc-group path {
+    fill: none;
+    stroke: #0C0C0C;
+    stroke-width: 4.3;
+    stroke-linecap: round;
+  }
+  .arc-inner, .arc-mid, .arc-outer { }
+  .arc-inner path { animation: wave 1260ms ease-in-out -210ms infinite; }
+  .arc-mid    path { animation: wave 1260ms ease-in-out -1051ms infinite; }
+  .arc-outer  path { animation: wave 1260ms ease-in-out -630ms infinite; }
+  @keyframes wave {
+    0%       { opacity: 0.12; }
+    16.67%  { opacity: 1.00; }
+    33.33%  { opacity: 0.12; }
+    100%     { opacity: 0.12; }
+  }
+</style>
+
+<rect width="100" height="100" fill="#FFFFFF"/>
+
+<!-- Antenna stem -->
+<line x1="50.0" y1="43.560" x2="50.0" y2="84.960"
+      stroke="#1E3838" stroke-width="3.91" stroke-linecap="round"/>
+
+<!-- Antenna ball -->
+<circle cx="50.0" cy="38.090" r="5.470" fill="#1E3838"/>
+
+<!-- Signal arcs -->
+<g class="arc-group" fill="none" stroke="#0C0C0C" stroke-width="4.30" stroke-linecap="round">
+
+  <!-- inner arcs (r=11.72) -->
+  <g class="arc-inner">
+    <path d="M 57.216,28.855 A 11.720,11.720 0 0,1 57.216,47.325"/>
+    <path d="M 42.784,28.855 A 11.720,11.720 0 0,0 42.784,47.325"/>
+  </g>
+  <!-- middle arcs (r=21.09) -->
+  <g class="arc-mid">
+    <path d="M 62.984,21.471 A 21.090,21.090 0 0,1 62.984,54.709"/>
+    <path d="M 37.016,21.471 A 21.090,21.090 0 0,0 37.016,54.709"/>
+  </g>
+  <!-- outer arcs (r=30.47) -->
+  <g class="arc-outer">
+    <path d="M 68.759,14.079 A 30.470,30.470 0 0,1 68.759,62.101"/>
+    <path d="M 31.241,14.079 A 30.470,30.470 0 0,0 31.241,62.101"/>
+  </g>
+</g>
+</svg>
