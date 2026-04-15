@@ -43,10 +43,10 @@ export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
       onRateLimit: (retryAfter, options, _octokit, retryCount) => {
         const opts = options as { method: string; url: string }
         console.warn(
-          `[beacon] Rate limit hit for ${opts.method} ${opts.url}`,
+          `[signals] Rate limit hit for ${opts.method} ${opts.url}`,
         )
         if (retryCount < 3) {
-          console.info(`[beacon] Retrying after ${retryAfter}s`)
+          console.info(`[signals] Retrying after ${retryAfter}s`)
           return true
         }
         return false
@@ -54,7 +54,7 @@ export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
       onSecondaryRateLimit: (_retryAfter, options) => {
         const opts = options as { method: string; url: string }
         console.warn(
-          `[beacon] Secondary rate limit for ${opts.method} ${opts.url}`,
+          `[signals] Secondary rate limit for ${opts.method} ${opts.url}`,
         )
       },
     },

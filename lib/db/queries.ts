@@ -1,6 +1,6 @@
 import { eq, desc, sql } from 'drizzle-orm'
 import { db } from './client'
-import { workspaces, repos, pullRequests, signals, syncLog, repoContext, settings } from './schema'
+import { workspaces, repos, pullRequests, signals, syncLog, repoContext, settings, scoreHistory } from './schema'
 import type {
   Workspace,
   WorkspaceSource,
@@ -280,4 +280,35 @@ export function setSetting(key: string, value: string): void {
       .values({ key, value, updatedAt: now })
       .run()
   }
+}
+
+export interface ScoreSnapshot {
+  repoFullName: string
+  score: number
+  grade: string
+  pillars: RepoPillars
+  syncedAt: string
+}
+
+export function getScoreHistory(
+  workspaceId: number,
+  options?: { limit?: number; repoFullName?: string },
+): ScoreSnapshot[] {
+  let query = db
+    .select()
+    .from(scoreHistory)
+    .where(eq(scoreHistory.workspaceId, workspaceId))
+    .orderBy(desc(scoreHistory.syncedAt))
+
+  const rows = options?.limit ? query.limit(options.limit).all() : query.all()
+
+  return rows
+    .filter((r) => !options?.repoFullName || r.repoFullName === options.repoFullName)
+    .map((r) => ({
+      repoFullName: r.repoFullName,
+      score: r.score,
+      grade: r.grade,
+      pillars: JSON.parse(r.pillars) as RepoPillars,
+      syncedAt: r.syncedAt,
+    }))
 }

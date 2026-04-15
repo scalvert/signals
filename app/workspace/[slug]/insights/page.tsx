@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getRepos } from '@/lib/db/queries'
+import { getWorkspaceBySlug, getRepos, getPullRequests, getScoreHistory } from '@/lib/db/queries'
 import { Insights } from '@/components/screens/Insights'
 
 export default async function InsightsPage({
@@ -12,5 +12,7 @@ export default async function InsightsPage({
   if (!workspace) notFound()
 
   const repos = getRepos(workspace.id)
-  return <Insights repos={repos} />
+  const prs = getPullRequests(workspace.id)
+  const history = getScoreHistory(workspace.id)
+  return <Insights repos={repos} prs={prs} scoreHistory={history} />
 }

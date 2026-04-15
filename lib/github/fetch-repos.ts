@@ -96,7 +96,7 @@ async function fetchSingleRepo(
     return parseRepoNode(result.repository)
   } catch (err) {
     console.warn(
-      `[beacon] Failed to fetch repo ${owner}/${name}:`,
+      `[signals] Failed to fetch repo ${owner}/${name}:`,
       err instanceof Error ? err.message : err,
     )
     return null

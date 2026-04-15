@@ -122,7 +122,7 @@ async function fetchSingleRepoPRs(
     )
   } catch (err) {
     console.warn(
-      `[beacon] Failed to fetch PRs for ${owner}/${name}:`,
+      `[signals] Failed to fetch PRs for ${owner}/${name}:`,
       err instanceof Error ? err.message : err,
     )
     return []

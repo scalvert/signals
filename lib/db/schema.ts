@@ -86,6 +86,16 @@ export const syncLog = sqliteTable('sync_log', {
   error: text('error'),
 })
 
+export const scoreHistory = sqliteTable('score_history', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  repoFullName: text('repo_full_name').notNull(),
+  score: real('score').notNull(),
+  grade: text('grade').notNull(),
+  pillars: text('pillars').notNull(),
+  syncedAt: text('synced_at').notNull(),
+})
+
 export const repoContext = sqliteTable('repo_context', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   workspaceId: integer('workspace_id').notNull(),

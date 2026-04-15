@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
-import { repos, pullRequests, syncLog } from '@/lib/db/schema'
+import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
 import { getRepos } from '@/lib/db/queries'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
@@ -117,6 +117,17 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
           triage: scored.triage,
           pillars: JSON.stringify(scored.pillars),
           checkResults: JSON.stringify(scored.checkResults),
+          syncedAt: now,
+        })
+        .run()
+
+      db.insert(scoreHistory)
+        .values({
+          workspaceId: workspace.id,
+          repoFullName: raw.fullName,
+          score: scored.score,
+          grade: scored.grade,
+          pillars: JSON.stringify(scored.pillars),
           syncedAt: now,
         })
         .run()
