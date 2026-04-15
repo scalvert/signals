@@ -2,6 +2,7 @@ import { getSetting } from '@/lib/db/queries'
 import { claudeCodeProvider } from './providers/claude-code'
 import { cursorProvider } from './providers/cursor'
 import { createCustomProvider } from './providers/custom'
+import { createCodexProvider } from './providers/codex'
 import type { AgentProvider, ProviderConfig, DispatchResult } from './types'
 import type { Task } from '@/types/workspace'
 
@@ -26,6 +27,7 @@ function getProvider(providerType: string): AgentProvider | null {
   const configs = getConfiguredProviders()
   const config = configs.find((c) => c.type === providerType)
   if (config?.type === 'custom') return createCustomProvider(config)
+  if (config?.type === 'codex') return createCodexProvider(config)
 
   return null
 }

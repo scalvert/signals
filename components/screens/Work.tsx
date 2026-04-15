@@ -24,6 +24,13 @@ function StatusBadge({ status }: { status: TaskStatus }) {
   )
 }
 
+const STALE_DAYS = 7
+
+function isStaleTask(completedAt: string): boolean {
+  const daysSince = (Date.now() - new Date(completedAt).getTime()) / (1000 * 60 * 60 * 24)
+  return daysSince > STALE_DAYS
+}
+
 async function handleDispatch(taskId: number, provider?: string) {
   await fetch(`/api/tasks/${taskId}/dispatch`, {
     method: 'POST',
@@ -123,6 +130,9 @@ export function Work({ tasks }: { tasks: Task[] }) {
                         <Play className="w-3 h-3" />
                         Dispatch
                       </button>
+                    )}
+                    {task.status === 'completed' && task.completedAt && isStaleTask(task.completedAt) && (
+                      <span className="text-[10px] text-[var(--health-c)]">stale</span>
                     )}
                   </div>
                 </td>

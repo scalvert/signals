@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
-import { getRepos, getDismissedChecks } from '@/lib/db/queries'
+import { getRepos, getSignals, getDismissedChecks, getTasks, updateTaskStatus, addTaskNote } from '@/lib/db/queries'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo } from '@/lib/scoring/engine'
@@ -166,6 +166,30 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
       })
       .where(eq(syncLog.id, logEntry.id))
       .run()
+
+    // Verify completed tasks
+    const completedTasks = getTasks(workspace.id, { status: 'completed' })
+    for (const task of completedTasks) {
+      const repo = getRepos(workspace.id).find((r) => r.fullName === task.repoFullName)
+      if (!repo) continue
+
+      let verified = false
+      if (task.sourceType === 'check') {
+        const check = repo.checkResults[task.sourceId]
+        if (check && check.score >= 0.7) verified = true
+      } else if (task.sourceType === 'signal') {
+        const activeSignals = getSignals(workspace.id, { status: 'active' })
+        const stillActive = activeSignals.some(
+          (s) => String(s.id) === task.sourceId && s.repoFullName === task.repoFullName,
+        )
+        if (!stillActive) verified = true
+      }
+
+      if (verified) {
+        updateTaskStatus(task.id, 'verified')
+        addTaskNote(task.id, 'Verified by sync — the originating issue is resolved.', 'system')
+      }
+    }
 
     return { repoCount: rawRepos.length, prCount: rawPRs.length, signalCount }
   } catch (err) {
