@@ -6,8 +6,39 @@ import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo } from '@/lib/scoring/engine'
 import { runSignalDetection } from '@/lib/signals/engine'
-import type { Workspace } from '@/types/workspace'
+import type { Workspace, WorkspaceSource } from '@/types/workspace'
 import type { RepoSnapshot } from '@/lib/scoring/types'
+
+function filterReposBySourceSelection<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(repos: T[], sources: WorkspaceSource[]): T[] {
+  const included = new Set<string>()
+
+  for (const source of sources) {
+    if (source.type === 'repo') {
+      included.add(source.value)
+      continue
+    }
+
+    const prefix = source.value + '/'
+    const sourceRepos = repos.filter((r) => r.fullName.startsWith(prefix))
+    const selection = source.repos
+
+    for (const repo of sourceRepos) {
+      if (selection?.visibility === 'public' && repo.isPrivate) continue
+      if (selection?.visibility === 'private' && !repo.isPrivate) continue
+      if (selection?.excludeForks && repo.isFork) continue
+
+      if (selection?.mode === 'selected') {
+        if (!selection.selected.includes(repo.name)) continue
+      } else if (selection?.mode === 'all' && selection.selected.length > 0) {
+        if (selection.selected.includes(repo.name)) continue
+      }
+
+      included.add(repo.fullName)
+    }
+  }
+
+  return repos.filter((r) => included.has(r.fullName))
+}
 
 export async function syncWorkspace(workspace: Workspace): Promise<{
   repoCount: number
@@ -32,11 +63,10 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     const previousRepos = getRepos(workspace.id)
 
     // Fetch data from GitHub (sequential to avoid concurrent pagination 502s)
-    const excluded = new Set(workspace.excludedRepos)
     const allRepos = await fetchReposForWorkspace(workspace.sources)
     const allPRs = await fetchPRsForWorkspace(workspace.sources)
-    const rawRepos = allRepos.filter((r) => !excluded.has(r.fullName))
-    const rawPRs = allPRs.filter((pr) => !excluded.has(pr.repoFullName))
+    const rawRepos = filterReposBySourceSelection(allRepos, workspace.sources)
+    const rawPRs = allPRs.filter((pr) => rawRepos.some((r) => r.fullName === pr.repoFullName))
 
     // Clear existing data for this workspace
     db.delete(repos).where(eq(repos.workspaceId, workspace.id)).run()
@@ -81,6 +111,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
           hasLicense: raw.hasLicense,
           hasContributing: raw.hasContributing,
           isPrivate: raw.isPrivate,
+          isFork: raw.isFork,
           score: scored.score,
           grade: scored.grade,
           triage: scored.triage,

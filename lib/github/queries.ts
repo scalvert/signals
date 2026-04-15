@@ -14,6 +14,7 @@ export const ORG_REPOS_QUERY = `
           description
           url
           isPrivate
+          isFork
           primaryLanguage { name }
           stargazerCount
           forkCount
@@ -51,6 +52,7 @@ export const USER_REPOS_QUERY = `
           description
           url
           isPrivate
+          isFork
           primaryLanguage { name }
           stargazerCount
           forkCount
@@ -156,6 +158,58 @@ export const USER_PRS_QUERY = `
               }
             }
           }
+        }
+      }
+    }
+  }
+`
+
+export const VIEWER_SEARCH_QUERY = `
+  query ViewerSearch {
+    viewer {
+      login
+      avatarUrl
+      organizations(first: 100) {
+        nodes {
+          login
+          avatarUrl
+          repositories { totalCount }
+        }
+      }
+    }
+  }
+`
+
+export const ORG_REPOS_PICKER_QUERY = `
+  query OrgReposPicker($org: String!, $cursor: String) {
+    organization(login: $org) {
+      repositories(first: 100, after: $cursor, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          name
+          nameWithOwner
+          stargazerCount
+          isPrivate
+          isArchived
+          isFork
+        }
+      }
+    }
+  }
+`
+
+export const USER_REPOS_PICKER_QUERY = `
+  query UserReposPicker($user: String!, $cursor: String) {
+    user(login: $user) {
+      repositories(first: 100, after: $cursor, ownerAffiliations: OWNER, orderBy: { field: UPDATED_AT, direction: DESC }) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          name
+          nameWithOwner
+          stargazerCount
+          isPrivate
+          isArchived
+          isFork
         }
       }
     }

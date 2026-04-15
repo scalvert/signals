@@ -5,6 +5,7 @@ export interface GitHubRepoNode {
   description: string | null
   url: string
   isPrivate: boolean
+  isFork: boolean
   primaryLanguage: { name: string } | null
   stargazerCount: number
   forkCount: number

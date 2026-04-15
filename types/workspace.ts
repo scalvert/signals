@@ -10,9 +10,17 @@ export type SignalType =
   | 'milestone'
   | 'dormant'
 
+export interface SourceRepoSelection {
+  mode: 'all' | 'selected'
+  selected: string[]
+  excludeForks?: boolean
+  visibility?: 'all' | 'public' | 'private'
+}
+
 export interface WorkspaceSource {
   type: 'org' | 'user' | 'repo'
   value: string
+  repos?: SourceRepoSelection
 }
 
 export interface RepoPillars {
@@ -39,6 +47,7 @@ export interface Repo {
   hasLicense: boolean
   hasContributing: boolean
   isPrivate: boolean
+  isFork: boolean
   score: number
   grade: HealthGrade
   triage: TriageStatus

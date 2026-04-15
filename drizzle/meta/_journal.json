@@ -36,6 +36,13 @@
       "when": 1776112860713,
       "tag": "0004_volatile_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1776188433805,
+      "tag": "0005_same_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

@@ -19,6 +19,7 @@ interface RawRepo {
   hasLicense: boolean
   hasContributing: boolean
   isPrivate: boolean
+  isFork: boolean
 }
 
 export async function fetchReposForWorkspace(
@@ -120,5 +121,6 @@ function parseRepoNode(node: GitHubRepoNode): RawRepo {
     hasLicense: node.licenseInfo !== null,
     hasContributing: node.contributingFile !== null,
     isPrivate: node.isPrivate,
+    isFork: node.isFork,
   }
 }

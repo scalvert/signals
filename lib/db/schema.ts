@@ -33,6 +33,9 @@ export const repos = sqliteTable('repos', {
   isPrivate: integer('is_private', { mode: 'boolean' })
     .notNull()
     .default(false),
+  isFork: integer('is_fork', { mode: 'boolean' })
+    .notNull()
+    .default(false),
   score: real('score').notNull().default(0),
   grade: text('grade').notNull().default('F'),
   triage: text('triage').notNull().default('critical'),

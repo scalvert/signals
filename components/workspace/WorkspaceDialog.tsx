@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Building2, GitBranch, User, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { X } from 'lucide-react'
+import { GitHubSourceSearch } from './GitHubSourceSearch'
+import { SourceCard } from './SourceCard'
 import type { Workspace, WorkspaceSource } from '@/types/workspace'
 
 interface WorkspaceDialogProps {
@@ -17,8 +18,6 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
   const isEditing = !!workspace
   const [name, setName] = useState('')
   const [sources, setSources] = useState<WorkspaceSource[]>([])
-  const [sourceInput, setSourceInput] = useState('')
-  const [sourceType, setSourceType] = useState<'org' | 'user' | 'repo'>('org')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,26 +25,21 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
     if (open) {
       setName(workspace?.name ?? '')
       setSources(workspace?.sources ?? [])
-      setSourceInput('')
       setError(null)
     }
   }, [open, workspace])
 
-  function addSource() {
-    const value = sourceInput.trim()
-    if (!value) return
-    if (sourceType === 'repo' && !value.includes('/')) {
-      setError('Repo must be in owner/repo format (e.g. vercel/next.js)')
-      return
-    }
-    if (sources.some((s) => s.type === sourceType && s.value === value)) return
-    setError(null)
-    setSources([...sources, { type: sourceType, value }])
-    setSourceInput('')
+  function addSource(source: WorkspaceSource) {
+    if (sources.some((s) => s.type === source.type && s.value === source.value)) return
+    setSources([...sources, source])
   }
 
   function removeSource(index: number) {
     setSources(sources.filter((_, i) => i !== index))
+  }
+
+  function updateSource(index: number, source: WorkspaceSource) {
+    setSources(sources.map((s, i) => (i === index ? source : s)))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -99,8 +93,8 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl max-h-[85vh] flex flex-col overflow-visible">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold text-foreground">
             {isEditing ? 'Edit Workspace' : 'Create Workspace'}
           </h2>
@@ -112,8 +106,8 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="mb-5">
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 flex-1">
+          <div>
             <label className="mb-1.5 block text-[13px] font-medium text-foreground">
               Workspace name
             </label>
@@ -127,120 +121,37 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
             />
           </div>
 
-          <div className="mb-5">
+          <div>
             <label className="mb-1.5 block text-[13px] font-medium text-foreground">
               Sources
             </label>
             <p className="mb-3 text-[12px] text-muted-foreground">
-              Add GitHub orgs or individual repos to track.
+              Search for GitHub orgs, users, or repos to track.
             </p>
 
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex rounded-md border border-border">
-                <button
-                  type="button"
-                  onClick={() => setSourceType('org')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
-                    sourceType === 'org'
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <Building2 className="h-3 w-3" />
-                  Org
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSourceType('user')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
-                    sourceType === 'user'
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <User className="h-3 w-3" />
-                  User
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSourceType('repo')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
-                    sourceType === 'repo'
-                      ? 'bg-foreground text-background'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <GitBranch className="h-3 w-3" />
-                  Repo
-                </button>
-              </div>
-              <input
-                type="text"
-                value={sourceInput}
-                onChange={(e) => setSourceInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    addSource()
-                  }
-                }}
-                placeholder={
-                  sourceType === 'org' ? 'e.g. gleanwork' : sourceType === 'user' ? 'e.g. scalvert' : 'e.g. vercel/next.js'
-                }
-                className="h-8 flex-1 rounded-md border border-input bg-background px-3 text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-              />
-              <button
-                type="button"
-                onClick={addSource}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
+            <div className="mb-3">
+              <GitHubSourceSearch existingSources={sources} onAdd={addSource} />
             </div>
 
             {sources.length > 0 && (
-              <div className="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto">
+              <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
                 {sources.map((source, i) => (
-                  <div
+                  <SourceCard
                     key={`${source.type}-${source.value}`}
-                    className="flex items-center justify-between rounded-md border border-border bg-muted/50 px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      {source.type === 'org' ? (
-                        <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                      ) : source.type === 'user' ? (
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      ) : (
-                        <GitBranch className="h-3.5 w-3.5 text-muted-foreground" />
-                      )}
-                      <span className="text-[12px] font-medium text-foreground">
-                        {source.value}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {source.type}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeSource(i)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
+                    source={source}
+                    onRemove={() => removeSource(i)}
+                    onChange={(updated) => updateSource(i, updated)}
+                  />
                 ))}
               </div>
             )}
           </div>
 
           {error && (
-            <p className="mb-4 text-[12px] text-destructive">{error}</p>
+            <p className="text-[12px] text-destructive">{error}</p>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
             <button
               type="button"
               onClick={onClose}
