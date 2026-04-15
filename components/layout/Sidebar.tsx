@@ -10,6 +10,7 @@ import {
   GitPullRequest,
   Rss,
   BarChart3,
+  Hammer,
   Settings,
   ChevronsUpDown,
   Check,
@@ -27,6 +28,7 @@ const navItems = [
   { path: '/repos', label: 'Repositories', icon: GitBranch },
   { path: '/prs', label: 'Pull Requests', icon: GitPullRequest },
   { path: '/signals', label: 'Signal Feed', icon: Rss },
+  { path: '/work', label: 'Work', icon: Hammer },
   { path: '/insights', label: 'Insights', icon: BarChart3 },
 ]
 
