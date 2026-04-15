@@ -9,7 +9,7 @@ import { runSignalDetection } from '@/lib/signals/engine'
 import type { Workspace, WorkspaceSource } from '@/types/workspace'
 import type { RepoSnapshot } from '@/lib/scoring/types'
 
-function filterReposBySourceSelection<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(repos: T[], sources: WorkspaceSource[]): T[] {
+export function filterReposBySourceSelection<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(repos: T[], sources: WorkspaceSource[]): T[] {
   const included = new Set<string>()
 
   for (const source of sources) {
