@@ -70,15 +70,17 @@ export function SignalPanel({ signal, open, onClose }: SignalPanelProps) {
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-[400px] sm:w-[440px] overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-center gap-2">
-            <Icon className={cn('w-5 h-5', meta.color)} />
-            <SheetTitle className="text-[15px]">{signal.title}</SheetTitle>
+      <SheetContent className="w-[400px] sm:w-[440px] overflow-y-auto p-6">
+        <SheetHeader className="mb-5">
+          <div className="flex items-center gap-3">
+            <div className={cn('w-8 h-8 rounded-md flex items-center justify-center shrink-0', `bg-${meta.color.replace('text-', '')}/10`)}>
+              <Icon className={cn('w-4 h-4', meta.color)} />
+            </div>
+            <SheetTitle className="text-[15px] leading-tight">{signal.title}</SheetTitle>
           </div>
         </SheetHeader>
 
-        <div className="flex flex-col gap-5 mt-4">
+        <div className="flex flex-col gap-5">
           <Section title="What happened">
             <p className="text-[12px] text-muted-foreground leading-relaxed">
               {signal.enrichedBody ?? signal.body}
@@ -93,18 +95,24 @@ export function SignalPanel({ signal, open, onClose }: SignalPanelProps) {
             </div>
           </Section>
 
-          {Object.keys(metadata).length > 0 && (
-            <Section title="Details">
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(metadata).map(([key, value]) => (
-                  <div key={key} className="bg-muted/50 rounded px-2.5 py-1.5">
-                    <div className="text-[10px] text-muted-foreground uppercase">{formatKey(key)}</div>
-                    <div className="text-[12px] font-medium text-foreground">{formatValue(value)}</div>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          )}
+          {Object.keys(metadata).length > 0 && (() => {
+            const simpleEntries = Object.entries(metadata).filter(
+              ([, v]) => typeof v !== 'object' || v === null,
+            )
+            if (simpleEntries.length === 0) return null
+            return (
+              <Section title="Details">
+                <div className="grid grid-cols-2 gap-2">
+                  {simpleEntries.map(([key, value]) => (
+                    <div key={key} className="bg-muted/50 rounded px-2.5 py-2">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{formatKey(key)}</div>
+                      <div className="text-[13px] font-semibold text-foreground mt-0.5">{formatValue(value)}</div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )
+          })()}
 
           <Section title="Why it matters">
             <p className="text-[12px] text-muted-foreground leading-relaxed">{meta.whyItMatters}</p>
