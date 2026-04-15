@@ -7,6 +7,8 @@ import { healthDropDetector } from './detectors/health-drop'
 import { dormantDetector } from './detectors/dormant'
 import { milestoneDetector } from './detectors/milestone'
 import { detectStalePRs } from './detectors/pr-stale'
+import { detectNewContributors } from './detectors/new-contributor'
+import { issueFloodDetector } from './detectors/issue-flood'
 import { enrichSignals } from './enrichment'
 import type { Repo, Signal } from '@/types/workspace'
 import type { DetectedSignal } from './types'
@@ -16,6 +18,7 @@ const repoDetectors = [
   healthDropDetector,
   dormantDetector,
   milestoneDetector,
+  issueFloodDetector,
 ]
 
 export async function runSignalDetection(
@@ -37,6 +40,7 @@ export async function runSignalDetection(
   }
 
   detected.push(...detectStalePRs(prs, existingSignals, repoContexts))
+  detected.push(...detectNewContributors(prs, existingSignals))
 
   const insertedSignals: Signal[] = []
   for (const signal of detected) {

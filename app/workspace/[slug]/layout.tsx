@@ -15,9 +15,10 @@ export default async function WorkspaceLayout({
 
   const allWorkspaces = getWorkspaces()
   const syncStatus = getLatestSync(workspace.id)
+  const hasAiKey = !!process.env.ANTHROPIC_API_KEY
 
   return (
-    <WorkspaceShell workspace={workspace} allWorkspaces={allWorkspaces} syncStatus={syncStatus}>
+    <WorkspaceShell workspace={workspace} allWorkspaces={allWorkspaces} syncStatus={syncStatus} hasAiKey={hasAiKey}>
       {children}
     </WorkspaceShell>
   )

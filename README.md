@@ -126,7 +126,7 @@ export const myCheck: HealthCheck = {
 |----------|---------|-------------|
 | `GITHUB_TOKEN` | — | GitHub personal access token (required) |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key for AI chat (optional) |
-| `DATABASE_URL` | `./beacon.db` | SQLite database path |
+| `DATABASE_URL` | `./signals.db` | SQLite database path |
 | `SYNC_INTERVAL_MINUTES` | `15` | Auto-sync interval |
 
 ## Tech Stack

@@ -8,7 +8,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./test/setup.ts'],
-    exclude: ['**/node_modules/**', '**/beacon-scaffold/**'],
+    exclude: ['**/node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

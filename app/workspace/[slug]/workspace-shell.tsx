@@ -11,6 +11,7 @@ interface WorkspaceShellProps {
   workspace: Workspace
   allWorkspaces: Workspace[]
   syncStatus: SyncStatus | null
+  hasAiKey: boolean
   children: React.ReactNode
 }
 
@@ -18,6 +19,7 @@ export function WorkspaceShell({
   workspace,
   allWorkspaces,
   syncStatus: initialSyncStatus,
+  hasAiKey,
   children,
 }: WorkspaceShellProps) {
   const router = useRouter()
@@ -56,7 +58,7 @@ export function WorkspaceShell({
         />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
-      <AiChatPanel workspaceId={workspace.id} />
+      <AiChatPanel workspaceId={workspace.id} hasAiKey={hasAiKey} />
     </div>
   )
 }

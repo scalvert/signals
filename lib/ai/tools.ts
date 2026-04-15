@@ -137,5 +137,41 @@ export function buildWorkspaceTools(workspaceId: number) {
         }
       },
     }),
+
+    draft_pr_response: tool({
+      description:
+        'Draft a response to a pull request. Provide a welcoming, constructive, and actionable review comment.',
+      inputSchema: z.object({
+        repoName: z
+          .string()
+          .describe('Repository name or full name (e.g. "mcp-server" or "gleanwork/mcp-server")'),
+        prNumber: z.number().describe('Pull request number'),
+        tone: z
+          .enum(['welcoming', 'technical', 'brief'])
+          .default('welcoming')
+          .describe('Tone of the response'),
+      }),
+      execute: async ({ repoName, prNumber, tone }: { repoName: string; prNumber: number; tone: string }) => {
+        const repos = getRepos(workspaceId)
+        const repo = repos.find(
+          (r) =>
+            r.name === repoName ||
+            r.fullName === repoName ||
+            r.fullName.endsWith(`/${repoName}`),
+        )
+        if (!repo) return { error: `Repo "${repoName}" not found in this workspace` }
+
+        const prs = getPullRequests(workspaceId)
+        const pr = prs.find((p) => p.repoFullName === repo.fullName && p.number === prNumber)
+        if (!pr) return { error: `PR #${prNumber} not found in ${repo.fullName}` }
+
+        return {
+          repo: repo.fullName,
+          pr: { number: pr.number, title: pr.title, author: pr.authorLogin, isExternal: pr.isExternal, daysSinceUpdate: pr.daysSinceUpdate },
+          tone,
+          instruction: `Draft a ${tone} PR review comment for PR #${prNumber} "${pr.title}" by @${pr.authorLogin} on ${repo.fullName}. ${pr.isExternal ? 'This is from an external contributor — be especially welcoming.' : 'This is from a team member.'} The PR has been open for ${pr.daysSinceUpdate} days.`,
+        }
+      },
+    }),
   }
 }
