@@ -75,14 +75,18 @@ export function SignalCard({
   signal,
   showDismissAction,
   showRestoreAction,
+  workspaceId,
   onDismissed,
   onRestored,
+  onTaskCreated,
 }: {
   signal: Signal
   showDismissAction: boolean
   showRestoreAction: boolean
+  workspaceId?: number
   onDismissed?: () => void
   onRestored?: () => void
+  onTaskCreated?: () => void
 }) {
   const [showDismissForm, setShowDismissForm] = useState(false)
   const config = signalIcons[signal.type] ?? signalIcons['health-drop']
@@ -108,12 +112,37 @@ export function SignalCard({
               {new Date(signal.detectedAt).toLocaleDateString()}
             </div>
             {showDismissAction && !showDismissForm && (
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowDismissForm(true) }}
-                className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Dismiss
-              </button>
+              <>
+                {workspaceId && (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          workspaceId,
+                          repoFullName: signal.repoFullName,
+                          title: signal.title,
+                          description: signal.enrichedBody ?? signal.body,
+                          sourceType: 'signal',
+                          sourceId: String(signal.id),
+                        }),
+                      })
+                      onTaskCreated?.()
+                    }}
+                    className="text-[11px] font-medium text-primary hover:underline transition-colors"
+                  >
+                    Fix this
+                  </button>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowDismissForm(true) }}
+                  className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Dismiss
+                </button>
+              </>
             )}
           </div>
         </div>

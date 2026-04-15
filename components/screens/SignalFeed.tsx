@@ -11,9 +11,11 @@ import type { Signal } from '@/types/workspace'
 export function SignalFeed({
   activeSignals,
   dismissedSignals,
+  workspaceId,
 }: {
   activeSignals: Signal[]
   dismissedSignals: Signal[]
+  workspaceId: number
 }) {
   const [tab, setTab] = useState<'active' | 'dismissed'>('active')
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null)
@@ -89,6 +91,7 @@ export function SignalFeed({
                 signal={signal}
                 showDismissAction={tab === 'active'}
                 showRestoreAction={tab === 'dismissed'}
+                workspaceId={workspaceId}
                 onDismissed={handleDismissed}
                 onRestored={handleDismissed}
               />

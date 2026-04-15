@@ -17,6 +17,7 @@ export default async function SignalsPage({
     <SignalFeed
       activeSignals={activeSignals}
       dismissedSignals={dismissedSignals}
+      workspaceId={workspace.id}
     />
   )
 }

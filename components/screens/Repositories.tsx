@@ -20,11 +20,12 @@ const pillarLabels: Record<string, string> = {
   security: 'Security',
 }
 
-function CheckResultItem({ checkId, result, isDismissed, onToggleDismiss }: {
+function CheckResultItem({ checkId, result, isDismissed, onToggleDismiss, onFix }: {
   checkId: string
   result: Repo['checkResults'][string]
   isDismissed?: boolean
   onToggleDismiss?: () => void
+  onFix?: () => void
 }) {
   const passed = result.score >= 0.7
   const partial = result.score >= 0.4 && result.score < 0.7
@@ -44,6 +45,14 @@ function CheckResultItem({ checkId, result, isDismissed, onToggleDismiss }: {
           <span className="text-[12px] font-medium text-foreground">{result.checkName}</span>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-muted-foreground font-mono">{Math.round(result.score * 100)}%</span>
+            {!isDismissed && onFix && (
+              <button
+                onClick={onFix}
+                className="text-[10px] font-medium text-primary hover:underline transition-colors"
+              >
+                Fix
+              </button>
+            )}
             {onToggleDismiss && (
               <button
                 onClick={onToggleDismiss}
@@ -219,7 +228,20 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
               {failingChecks
                 .sort(([, a], [, b]) => a.score - b.score)
                 .map(([id, result]) => (
-                  <CheckResultItem key={id} checkId={id} result={result} onToggleDismiss={() => toggleCheck(id)} />
+                  <CheckResultItem key={id} checkId={id} result={result} onToggleDismiss={() => toggleCheck(id)} onFix={async () => {
+                    await fetch('/api/tasks', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        workspaceId,
+                        repoFullName: repo.fullName,
+                        title: `${result.checkName} on ${repo.name}`,
+                        description: result.actionable ?? result.label,
+                        sourceType: 'check',
+                        sourceId: id,
+                      }),
+                    })
+                  }} />
                 ))}
               {dismissedFailingChecks
                 .sort(([, a], [, b]) => a.score - b.score)
