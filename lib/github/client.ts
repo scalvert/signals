@@ -5,9 +5,9 @@ import { paginateGraphQL } from '@octokit/plugin-paginate-graphql'
 
 const ThrottledOctokit = Octokit.plugin(throttling, paginateGraphQL)
 
-let instance: InstanceType<typeof ThrottledOctokit> | null = null
+const instances = new Map<string, InstanceType<typeof ThrottledOctokit>>()
 
-function resolveToken(): string {
+function resolveDefaultToken(): string {
   if (process.env.GITHUB_TOKEN) {
     return process.env.GITHUB_TOKEN
   }
@@ -31,20 +31,14 @@ function resolveToken(): string {
   )
 }
 
-export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
-  if (instance) return instance
-
-  const token = resolveToken()
-
-  instance = new ThrottledOctokit({
+function createOctokit(token: string): InstanceType<typeof ThrottledOctokit> {
+  return new ThrottledOctokit({
     auth: token,
     userAgent: 'signals/0.1.0',
     throttle: {
       onRateLimit: (retryAfter, options, _octokit, retryCount) => {
         const opts = options as { method: string; url: string }
-        console.warn(
-          `[signals] Rate limit hit for ${opts.method} ${opts.url}`,
-        )
+        console.warn(`[signals] Rate limit hit for ${opts.method} ${opts.url}`)
         if (retryCount < 3) {
           console.info(`[signals] Retrying after ${retryAfter}s`)
           return true
@@ -53,12 +47,18 @@ export function getOctokit(): InstanceType<typeof ThrottledOctokit> {
       },
       onSecondaryRateLimit: (_retryAfter, options) => {
         const opts = options as { method: string; url: string }
-        console.warn(
-          `[signals] Secondary rate limit for ${opts.method} ${opts.url}`,
-        )
+        console.warn(`[signals] Secondary rate limit for ${opts.method} ${opts.url}`)
       },
     },
   })
+}
 
+export function getOctokit(token?: string): InstanceType<typeof ThrottledOctokit> {
+  const resolvedToken = token ?? resolveDefaultToken()
+  const cached = instances.get(resolvedToken)
+  if (cached) return cached
+
+  const instance = createOctokit(resolvedToken)
+  instances.set(resolvedToken, instance)
   return instance
 }

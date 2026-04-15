@@ -1,3 +1,11 @@
+export interface User {
+  id: number
+  githubLogin: string
+  name: string
+  avatarUrl: string
+  createdAt: string
+}
+
 export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F'
 export type TriageStatus = 'healthy' | 'watch' | 'critical'
 export type SignalSeverity = 'info' | 'warning' | 'critical'

@@ -1,7 +1,19 @@
 import { sqliteTable, text, integer, real, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  githubLogin: text('github_login').notNull().unique(),
+  name: text('name').notNull(),
+  avatarUrl: text('avatar_url').notNull(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token'),
+  tokenExpiresAt: text('token_expires_at'),
+  createdAt: text('created_at').notNull(),
+})
+
 export const workspaces = sqliteTable('workspaces', {
   id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id'),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   sources: text('sources').notNull(), // JSON array of WorkspaceSource
