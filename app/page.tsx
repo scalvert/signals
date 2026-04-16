@@ -8,5 +8,6 @@ export default function Home() {
     redirect(`/workspace/${workspaces[0].slug}`)
   }
 
+  // No workspaces — setup handles auth state and workspace creation
   redirect('/setup')
 }
