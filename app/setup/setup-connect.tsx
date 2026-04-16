@@ -21,6 +21,7 @@ export function SetupConnect() {
         issues: 'read',
         pull_requests: 'read',
         members: 'read',
+        organization_administration: 'read',
         metadata: 'read',
       },
       default_events: [],
