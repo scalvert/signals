@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 import { AiChatPanel } from '@/components/layout/AiChatPanel'
-import type { Workspace, SyncStatus } from '@/types/workspace'
+import type { Workspace, SyncStatus, User } from '@/types/workspace'
 
 interface WorkspaceShellProps {
   workspace: Workspace
   allWorkspaces: Workspace[]
   syncStatus: SyncStatus | null
   hasAiKey: boolean
+  currentUser?: User | null
+  allUsers?: User[]
+  workspaceCounts?: Record<number, number>
   children: React.ReactNode
 }
 
@@ -20,6 +23,9 @@ export function WorkspaceShell({
   allWorkspaces,
   syncStatus: initialSyncStatus,
   hasAiKey,
+  currentUser,
+  allUsers,
+  workspaceCounts,
   children,
 }: WorkspaceShellProps) {
   const router = useRouter()
@@ -48,7 +54,7 @@ export function WorkspaceShell({
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-sans">
-      <Sidebar workspace={workspace} allWorkspaces={allWorkspaces} />
+      <Sidebar workspace={workspace} allWorkspaces={allWorkspaces} currentUser={currentUser} allUsers={allUsers} workspaceCounts={workspaceCounts} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           workspace={workspace}

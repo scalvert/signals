@@ -143,6 +143,7 @@ export interface Task {
 
 export interface Workspace {
   id: number
+  userId: number | null
   name: string
   slug: string
   sources: WorkspaceSource[]

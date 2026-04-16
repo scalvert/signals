@@ -16,11 +16,15 @@ import {
   Check,
   Layers,
 } from 'lucide-react'
-import type { Workspace } from '@/types/workspace'
+import { UserSwitcher } from './UserSwitcher'
+import type { Workspace, User } from '@/types/workspace'
 
 interface SidebarProps {
   workspace: Workspace
   allWorkspaces: Workspace[]
+  currentUser?: User | null
+  allUsers?: User[]
+  workspaceCounts?: Record<number, number>
 }
 
 const navItems = [
@@ -41,7 +45,7 @@ function sourceSummary(workspace: Workspace): string {
   return parts.join(' · ')
 }
 
-export function Sidebar({ workspace, allWorkspaces }: SidebarProps) {
+export function Sidebar({ workspace, allWorkspaces, currentUser, allUsers, workspaceCounts }: SidebarProps) {
   const pathname = usePathname()
   const basePath = `/workspace/${workspace.slug}`
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -125,6 +129,16 @@ export function Sidebar({ workspace, allWorkspaces }: SidebarProps) {
           )
         })}
       </nav>
+
+      <div className="px-2 pb-1">
+        {currentUser && allUsers && (
+          <UserSwitcher
+            currentUser={currentUser}
+            allUsers={allUsers}
+            workspaceCounts={workspaceCounts ?? {}}
+          />
+        )}
+      </div>
 
       <div className="px-2 pb-3">
         <Link
