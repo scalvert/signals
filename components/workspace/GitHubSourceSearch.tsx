@@ -137,11 +137,7 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
-        {loading ? (
-          <Loader2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground animate-spin" />
-        ) : (
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        )}
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
         <input
           type="text"
           value={query}
