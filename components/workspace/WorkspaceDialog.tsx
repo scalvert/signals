@@ -11,9 +11,10 @@ interface WorkspaceDialogProps {
   open: boolean
   onClose: () => void
   workspace?: Workspace
+  dismissable?: boolean
 }
 
-export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogProps) {
+export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }: WorkspaceDialogProps) {
   const router = useRouter()
   const isEditing = !!workspace
   const [name, setName] = useState('')
@@ -93,18 +94,20 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={dismissable ? onClose : undefined} />
       <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl max-h-[85vh] flex flex-col overflow-visible">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold text-foreground">
             {isEditing ? 'Edit Workspace' : 'Create Workspace'}
           </h2>
-          <button
-            onClick={onClose}
-            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {dismissable && (
+            <button
+              onClick={onClose}
+              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 flex-1">
@@ -153,13 +156,15 @@ export function WorkspaceDialog({ open, onClose, workspace }: WorkspaceDialogPro
           )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-9 px-4 rounded-md text-[13px] font-medium border border-border text-foreground hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
+            {dismissable && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-9 px-4 rounded-md text-[13px] font-medium border border-border text-foreground hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               disabled={!name.trim() || sources.length === 0 || submitting}

@@ -19,14 +19,20 @@ export async function GET(req: Request) {
         .catch(() => ({ data: { items: [] } })),
     ])
 
-    const orgs = orgUserResult.data.items
+    const orgItems = orgUserResult.data.items
       .filter((item) => item.type === 'Organization')
       .slice(0, 5)
-      .map((item) => ({
-        login: item.login,
-        avatarUrl: item.avatar_url,
-        repoCount: item.public_repos ?? 0,
-      }))
+
+    const orgs = await Promise.all(
+      orgItems.map(async (item) => {
+        const details = await octokit.rest.orgs.get({ org: item.login }).catch(() => null)
+        return {
+          login: item.login,
+          avatarUrl: item.avatar_url,
+          repoCount: details?.data.public_repos ?? 0,
+        }
+      }),
+    )
 
     const users = orgUserResult.data.items
       .filter((item) => item.type === 'User')

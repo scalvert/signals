@@ -3,5 +3,5 @@
 import { WorkspaceDialog } from '@/components/workspace/WorkspaceDialog'
 
 export function CreateWorkspace() {
-  return <WorkspaceDialog open onClose={() => {}} />
+  return <WorkspaceDialog open onClose={() => {}} dismissable={false} />
 }
