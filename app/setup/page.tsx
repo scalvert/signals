@@ -3,7 +3,7 @@ import { getSetting, getWorkspaces } from '@/lib/db/queries'
 import { getAuth } from '@/lib/auth/config'
 import { SetupConnect } from './setup-connect'
 import { SignInButton } from './sign-in-button'
-import { WorkspaceDialog } from '@/components/workspace/WorkspaceDialog'
+import { CreateWorkspace } from './create-workspace'
 
 export default async function SetupPage() {
   const { auth } = getAuth()
@@ -27,7 +27,7 @@ export default async function SetupPage() {
             Add GitHub orgs and repos to start monitoring.
           </p>
         </div>
-        <WorkspaceDialog open onClose={() => {}} />
+        <CreateWorkspace />
       </div>
     )
   }
