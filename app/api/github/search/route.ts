@@ -1,21 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAuth } from '@/lib/auth/config'
 import { getOctokit } from '@/lib/github/client'
-import { VIEWER_SEARCH_QUERY } from '@/lib/github/queries'
-
-interface ViewerSearchResult {
-  viewer: {
-    login: string
-    avatarUrl: string
-    organizations: {
-      nodes: Array<{
-        login: string
-        avatarUrl: string
-        repositories: { totalCount: number }
-      }>
-    }
-  }
-}
 
 interface OrgSearchResult {
   search: {
@@ -23,6 +8,15 @@ interface OrgSearchResult {
       login?: string
       avatarUrl?: string
       repositories?: { totalCount: number }
+    }>
+  }
+}
+
+interface UserSearchResult {
+  search: {
+    nodes: Array<{
+      login?: string
+      avatarUrl?: string
     }>
   }
 }
@@ -45,6 +39,19 @@ const ORG_SEARCH_QUERY = `
           login
           avatarUrl
           repositories { totalCount }
+        }
+      }
+    }
+  }
+`
+
+const USER_SEARCH_QUERY = `
+  query UserSearch($searchQuery: String!) {
+    search(query: $searchQuery, type: USER, first: 5) {
+      nodes {
+        ... on User {
+          login
+          avatarUrl
         }
       }
     }
@@ -78,44 +85,42 @@ export async function GET(req: Request) {
     const session = await auth()
     const octokit = getOctokit(session?.accessToken)
 
-    const [viewerResult, orgSearchResult, repoResult] = await Promise.all([
-      octokit.graphql<ViewerSearchResult>(VIEWER_SEARCH_QUERY),
+    const [orgResult, userResult, repoResult] = await Promise.all([
       octokit.graphql<OrgSearchResult>(ORG_SEARCH_QUERY, {
         searchQuery: `${query} type:org`,
-      }),
+      }).catch(() => ({ search: { nodes: [] } }) as OrgSearchResult),
+      octokit.graphql<UserSearchResult>(USER_SEARCH_QUERY, {
+        searchQuery: `${query} type:user`,
+      }).catch(() => ({ search: { nodes: [] } }) as UserSearchResult),
       octokit.graphql<RepoSearchResult>(REPO_SEARCH_QUERY, {
         searchQuery: `user:${query} fork:true`,
-      }).catch(() => ({ search: { nodes: [] } } as RepoSearchResult)),
+      }).catch(() => ({ search: { nodes: [] } }) as RepoSearchResult),
     ])
 
-    const viewer = viewerResult.viewer
-
-    // Merge viewer orgs with search results, deduplicate
-    const orgMap = new Map<string, { login: string; avatarUrl: string; repoCount: number }>()
-    for (const org of viewer.organizations.nodes) {
-      if (org.login.toLowerCase().includes(query)) {
-        orgMap.set(org.login, { login: org.login, avatarUrl: org.avatarUrl, repoCount: org.repositories.totalCount })
-      }
-    }
-    for (const node of orgSearchResult.search.nodes) {
-      if (node.login && !orgMap.has(node.login)) {
-        orgMap.set(node.login, { login: node.login, avatarUrl: node.avatarUrl ?? '', repoCount: node.repositories?.totalCount ?? 0 })
-      }
-    }
-
-    const users = viewer.login.toLowerCase().includes(query)
-      ? [{ login: viewer.login, avatarUrl: viewer.avatarUrl }]
-      : []
-
-    const repos = repoResult.search.nodes
-      .filter((node) => node.nameWithOwner)
-      .map((node) => ({
-        fullName: node.nameWithOwner!,
-        stars: node.stargazerCount ?? 0,
-        isPrivate: node.isPrivate ?? false,
+    const orgs = orgResult.search.nodes
+      .filter((n) => n.login)
+      .map((n) => ({
+        login: n.login!,
+        avatarUrl: n.avatarUrl ?? '',
+        repoCount: n.repositories?.totalCount ?? 0,
       }))
 
-    return NextResponse.json({ orgs: Array.from(orgMap.values()), users, repos })
+    const users = userResult.search.nodes
+      .filter((n) => n.login)
+      .map((n) => ({
+        login: n.login!,
+        avatarUrl: n.avatarUrl ?? '',
+      }))
+
+    const repos = repoResult.search.nodes
+      .filter((n) => n.nameWithOwner)
+      .map((n) => ({
+        fullName: n.nameWithOwner!,
+        stars: n.stargazerCount ?? 0,
+        isPrivate: n.isPrivate ?? false,
+      }))
+
+    return NextResponse.json({ orgs, users, repos })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[signals] GitHub search failed:', message)
