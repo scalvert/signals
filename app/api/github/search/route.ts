@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth/config'
+import { getAuth } from '@/lib/auth/config'
 import { getOctokit } from '@/lib/github/client'
 import { VIEWER_SEARCH_QUERY } from '@/lib/github/queries'
 
@@ -74,6 +74,7 @@ export async function GET(req: Request) {
   }
 
   try {
+    const { auth } = getAuth()
     const session = await auth()
     const octokit = getOctokit(session?.accessToken)
 

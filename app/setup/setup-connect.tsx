@@ -9,9 +9,11 @@ export function SetupConnect() {
     setLoading(true)
     const origin = window.location.origin
 
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     const manifest = {
       name: `Signals (${window.location.hostname})`,
       url: origin,
+      ...(!isLocalhost ? { logo_url: `${origin}/signals-icon-black-512px.png` } : {}),
       hook_attributes: { url: 'https://example.com/no-op' },
       redirect_url: `${origin}/api/github/setup-callback`,
       callback_urls: [`${origin}/api/auth/callback/github`],

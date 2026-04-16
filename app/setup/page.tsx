@@ -1,9 +1,10 @@
 import { redirect } from 'next/navigation'
 import { getSetting } from '@/lib/db/queries'
-import { signIn, auth } from '@/lib/auth/config'
+import { getAuth } from '@/lib/auth/config'
 import { SetupConnect } from './setup-connect'
 
 export default async function SetupPage() {
+  const { auth, signIn } = getAuth()
   const session = await auth()
 
   // Already logged in — go to workspace

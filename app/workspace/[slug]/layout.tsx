@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getWorkspaceBySlug, getWorkspaces, getLatestSync } from '@/lib/db/queries'
 import { getAllUsers } from '@/lib/auth/users'
-import { auth } from '@/lib/auth/config'
+import { getAuth } from '@/lib/auth/config'
 import { WorkspaceShell } from './workspace-shell'
 
 export default async function WorkspaceLayout({
@@ -19,6 +19,7 @@ export default async function WorkspaceLayout({
   const syncStatus = getLatestSync(workspace.id)
   const hasAiKey = !!process.env.ANTHROPIC_API_KEY
 
+  const { auth } = getAuth()
   const session = await auth()
   const allUsers = getAllUsers()
   const currentUser = session?.user?.githubLogin
