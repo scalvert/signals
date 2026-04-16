@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { getAuth } from '@/lib/auth/config'
 import { getOctokit } from '@/lib/github/client'
 import { ORG_REPOS_PICKER_QUERY, USER_REPOS_PICKER_QUERY } from '@/lib/github/queries'
 
@@ -24,9 +23,7 @@ export async function GET(req: Request) {
     )
   }
 
-  const { auth } = getAuth()
-  const session = await auth()
-  const octokit = getOctokit(session?.accessToken)
+  const octokit = getOctokit()
   const query = type === 'org' ? ORG_REPOS_PICKER_QUERY : USER_REPOS_PICKER_QUERY
   const variables = type === 'org' ? { org: owner } : { user: owner }
   const rootField = type === 'org' ? 'organization' : 'user'

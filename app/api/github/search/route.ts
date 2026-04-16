@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { getAuth } from '@/lib/auth/config'
 import { getOctokit } from '@/lib/github/client'
 
 interface OrgSearchResult {
@@ -81,9 +80,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const { auth } = getAuth()
-    const session = await auth()
-    const octokit = getOctokit(session?.accessToken)
+    const octokit = getOctokit()
 
     const [orgResult, userResult, repoResult] = await Promise.all([
       octokit.graphql<OrgSearchResult>(ORG_SEARCH_QUERY, {
