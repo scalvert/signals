@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createWorkspace, getWorkspaces } from '@/lib/db/queries'
+import { getAuth } from '@/lib/auth/config'
 import { slugify } from '@/lib/utils'
 import type { WorkspaceSource } from '@/types/workspace'
 
@@ -9,6 +10,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { auth } = getAuth()
+  const session = await auth()
+
   const body = await request.json()
   const { name, sources } = body as {
     name: string
@@ -31,7 +35,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const workspace = createWorkspace(name, slug, sources)
+    const userId = session?.user?.id ? Number(session.user.id) : undefined
+    const workspace = createWorkspace(name, slug, sources, userId)
     return NextResponse.json(workspace, { status: 201 })
   } catch (err) {
     const message =

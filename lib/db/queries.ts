@@ -34,6 +34,7 @@ export function createWorkspace(
   name: string,
   slug: string,
   sources: WorkspaceSource[],
+  userId?: number,
 ): Workspace {
   const now = new Date().toISOString()
   const result = db
@@ -42,6 +43,7 @@ export function createWorkspace(
       name,
       slug,
       sources: JSON.stringify(sources),
+      userId: userId ?? null,
       createdAt: now,
     })
     .returning()
