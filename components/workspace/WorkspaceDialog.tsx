@@ -95,7 +95,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={dismissable ? onClose : undefined} />
-      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl max-h-[85vh] flex flex-col overflow-visible">
+      <div className="relative w-full max-w-lg bg-background border border-border rounded-xl shadow-2xl max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
           <h2 className="text-[15px] font-semibold text-foreground">
             {isEditing ? 'Edit Workspace' : 'Create Workspace'}
@@ -110,7 +110,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 flex-1">
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 flex-1 overflow-y-auto">
           <div>
             <label className="mb-1.5 block text-[13px] font-medium text-foreground">
               Workspace name
