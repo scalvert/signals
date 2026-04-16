@@ -23,34 +23,47 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
   const [loading, setLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const abortRef = useRef<AbortController | undefined>(undefined)
 
   useEffect(() => {
     if (!query.trim()) {
       setResults(null)
       setOpen(false)
+      setLoading(false)
       return
     }
 
-    setLoading(true)
     clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/github/search?q=${encodeURIComponent(query.trim())}`)
-        if (!res.ok) {
-          setResults(null)
-          setLoading(false)
-          return
-        }
-        const data = await res.json()
-        setResults(data)
-        setOpen(true)
-      } catch {
-        setResults(null)
-      }
-      setLoading(false)
+    debounceRef.current = setTimeout(() => {
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      setLoading(true)
+      fetch(`/api/github/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error('Search failed')
+          return res.json()
+        })
+        .then((data) => {
+          if (!controller.signal.aborted) {
+            setResults(data)
+            setOpen(true)
+            setLoading(false)
+          }
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setResults(null)
+            setLoading(false)
+          }
+        })
     }, 300)
 
-    return () => clearTimeout(debounceRef.current)
+    return () => {
+      clearTimeout(debounceRef.current)
+      abortRef.current?.abort()
+    }
   }, [query])
 
   useEffect(() => {
