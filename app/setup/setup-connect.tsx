@@ -12,7 +12,6 @@ export function SetupConnect() {
     const manifest = {
       name: `Signals (${window.location.hostname})`,
       url: origin,
-      logo_url: 'https://raw.githubusercontent.com/scalvert/signals/main/public/signals-icon-black-512px.png',
       hook_attributes: { url: 'https://example.com/no-op' },
       redirect_url: `${origin}/api/github/setup-callback`,
       callback_urls: [`${origin}/api/auth/callback/github`],
