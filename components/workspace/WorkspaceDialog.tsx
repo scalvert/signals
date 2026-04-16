@@ -110,35 +110,37 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 flex-1 overflow-y-auto">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-foreground">
-              Workspace name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. My OSS Projects"
-              autoFocus
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-[13px] font-medium text-foreground">
-              Sources
-            </label>
-            <p className="mb-3 text-[12px] text-muted-foreground">
-              Search for GitHub orgs, users, or repos to track.
-            </p>
-
-            <div className="mb-3">
-              <GitHubSourceSearch existingSources={sources} onAdd={addSource} />
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="px-6 pt-6 pb-3 flex flex-col gap-5 shrink-0">
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                Workspace name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. My OSS Projects"
+                autoFocus
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              />
             </div>
 
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                Sources
+              </label>
+              <p className="mb-3 text-[12px] text-muted-foreground">
+                Search for GitHub orgs, users, or repos to track.
+              </p>
+
+              <GitHubSourceSearch existingSources={sources} onAdd={addSource} />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6">
             {sources.length > 0 && (
-              <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto">
+              <div className="flex flex-col gap-2">
                 {sources.map((source, i) => (
                   <SourceCard
                     key={`${source.type}-${source.value}`}
@@ -151,11 +153,12 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
             )}
           </div>
 
-          {error && (
-            <p className="text-[12px] text-destructive">{error}</p>
-          )}
+          <div className="px-6 pb-6 pt-3 shrink-0">
+            {error && (
+              <p className="text-[12px] text-destructive mb-3">{error}</p>
+            )}
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
             {dismissable && (
               <button
                 type="button"
@@ -178,6 +181,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
                   ? 'Save Changes'
                   : 'Create Workspace'}
             </button>
+            </div>
           </div>
         </form>
       </div>
