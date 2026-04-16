@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
 import { getRepos, getSignals, getDismissedChecks, getTasks, updateTaskStatus, addTaskNote } from '@/lib/db/queries'
+import { getUserToken } from '@/lib/auth/users'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo } from '@/lib/scoring/engine'
@@ -63,8 +64,9 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     const previousRepos = getRepos(workspace.id)
 
     // Fetch data from GitHub (sequential to avoid concurrent pagination 502s)
-    const allRepos = await fetchReposForWorkspace(workspace.sources)
-    const allPRs = await fetchPRsForWorkspace(workspace.sources)
+    const userToken = workspace.userId ? getUserToken(workspace.userId) ?? undefined : undefined
+    const allRepos = await fetchReposForWorkspace(workspace.sources, userToken)
+    const allPRs = await fetchPRsForWorkspace(workspace.sources, userToken)
     const rawRepos = filterReposBySourceSelection(allRepos, workspace.sources)
     const rawPRs = allPRs.filter((pr) => rawRepos.some((r) => r.fullName === pr.repoFullName))
 

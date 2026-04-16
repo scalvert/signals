@@ -24,20 +24,21 @@ interface RawRepo {
 
 export async function fetchReposForWorkspace(
   sources: WorkspaceSource[],
+  token?: string,
 ): Promise<RawRepo[]> {
   const repos: RawRepo[] = []
 
   for (const source of sources) {
     if (source.type === 'org') {
-      const orgRepos = await fetchOrgRepos(source.value)
+      const orgRepos = await fetchOrgRepos(source.value, token)
       repos.push(...orgRepos)
     } else if (source.type === 'user') {
-      const userRepos = await fetchUserRepos(source.value)
+      const userRepos = await fetchUserRepos(source.value, token)
       repos.push(...userRepos)
     } else {
       const [owner, name] = source.value.split('/')
       if (owner && name) {
-        const repo = await fetchSingleRepo(owner, name)
+        const repo = await fetchSingleRepo(owner, name, token)
         if (repo) repos.push(repo)
       }
     }
@@ -52,8 +53,8 @@ export async function fetchReposForWorkspace(
   })
 }
 
-async function fetchOrgRepos(login: string): Promise<RawRepo[]> {
-  const octokit = getOctokit()
+async function fetchOrgRepos(login: string, token?: string): Promise<RawRepo[]> {
+  const octokit = getOctokit(token)
 
   const result = await octokit.graphql.paginate<{
     organization: {
@@ -67,8 +68,8 @@ async function fetchOrgRepos(login: string): Promise<RawRepo[]> {
   return result.organization.repositories.nodes.map(parseRepoNode)
 }
 
-async function fetchUserRepos(login: string): Promise<RawRepo[]> {
-  const octokit = getOctokit()
+async function fetchUserRepos(login: string, token?: string): Promise<RawRepo[]> {
+  const octokit = getOctokit(token)
 
   const result = await octokit.graphql.paginate<{
     user: {
@@ -85,8 +86,9 @@ async function fetchUserRepos(login: string): Promise<RawRepo[]> {
 async function fetchSingleRepo(
   owner: string,
   name: string,
+  token?: string,
 ): Promise<RawRepo | null> {
-  const octokit = getOctokit()
+  const octokit = getOctokit(token)
 
   try {
     const result = await octokit.graphql<{
