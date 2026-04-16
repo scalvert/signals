@@ -20,6 +20,7 @@ const defaultSelection: SourceRepoSelection = {
 
 export function SourceCard({ source, onRemove, onChange }: SourceCardProps) {
   const [expanded, setExpanded] = useState(false)
+  const [hasExpanded, setHasExpanded] = useState(false)
   const isExpandable = source.type === 'org' || source.type === 'user'
   const selection = source.repos ?? defaultSelection
 
@@ -36,7 +37,7 @@ export function SourceCard({ source, onRemove, onChange }: SourceCardProps) {
           'flex items-center justify-between px-3 py-2 bg-muted/50',
           isExpandable && 'cursor-pointer',
         )}
-        onClick={() => isExpandable && setExpanded(!expanded)}
+        onClick={() => { if (isExpandable) { setExpanded(!expanded); setHasExpanded(true) } }}
       >
         <div className="flex items-center gap-2 min-w-0">
           {isExpandable && (
@@ -58,13 +59,15 @@ export function SourceCard({ source, onRemove, onChange }: SourceCardProps) {
           <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
         </button>
       </div>
-      {isExpandable && expanded && (
-        <SourceRepoSelector
-          owner={source.value}
-          type={source.type as 'org' | 'user'}
-          selection={selection}
-          onChange={handleSelectionChange}
-        />
+      {isExpandable && hasExpanded && (
+        <div className={expanded ? '' : 'hidden'}>
+          <SourceRepoSelector
+            owner={source.value}
+            type={source.type as 'org' | 'user'}
+            selection={selection}
+            onChange={handleSelectionChange}
+          />
+        </div>
       )}
     </div>
   )
