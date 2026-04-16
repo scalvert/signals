@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
     console.info('[signals] GitHub App created:', data.name)
 
-    return NextResponse.redirect(new URL('/api/auth/signin/github', req.url))
+    return NextResponse.redirect(new URL('/setup', req.url))
   } catch (err) {
     console.error('[signals] Setup callback error:', err)
     return NextResponse.redirect(new URL('/setup?error=unknown', req.url))

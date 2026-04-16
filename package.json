@@ -13,7 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "mcp": "tsx mcp/server.ts"
+    "db:reset": "rm -f signals.db && drizzle-kit migrate"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.69",
