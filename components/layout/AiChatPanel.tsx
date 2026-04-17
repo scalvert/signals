@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, ChevronRight, MessageSquare } from 'lucide-react'
+import { Sparkles, ChevronRight, MessageSquare, SquarePen } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { useChatRuntime, AssistantChatTransport } from '@assistant-ui/react-ai-sdk'
 import { Thread } from '@/components/assistant-ui/thread'
@@ -28,6 +28,7 @@ function ChatRuntime({ workspaceId, children }: { workspaceId: number; children:
 
 export function AiChatPanel({ workspaceId, hasAiKey }: AiChatPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [chatKey, setChatKey] = useState(0)
 
   if (!isExpanded) {
     return (
@@ -59,17 +60,26 @@ export function AiChatPanel({ workspaceId, hasAiKey }: AiChatPanelProps) {
             AI Assistant
           </span>
         </div>
-        <button
-          onClick={() => setIsExpanded(false)}
-          className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          title="Collapse"
-        >
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setChatKey((k) => k + 1)}
+            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="New chat"
+          >
+            <SquarePen className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Collapse"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {hasAiKey ? (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0" key={chatKey}>
           <ChatRuntime workspaceId={workspaceId}>
             <Thread />
           </ChatRuntime>
