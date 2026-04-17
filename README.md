@@ -1,4 +1,7 @@
-# Signals
+# <img src="public/signals-icon.png" alt="Signals" width="32" height="32" /> Signals
+
+> [!WARNING]
+> Signals is under active development and not yet feature-complete. Some screens are rough, some features are stubbed, and the data model may change. That said — contributions, feedback, and ideas are very welcome. If something catches your eye, open an issue or a PR.
 
 Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, triage PRs, and query your repos with AI — across all your GitHub orgs and projects in one place.
 
