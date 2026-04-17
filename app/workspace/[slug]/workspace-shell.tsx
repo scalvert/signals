@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
@@ -30,6 +30,15 @@ export function WorkspaceShell({
 }: WorkspaceShellProps) {
   const router = useRouter()
   const [syncing, setSyncing] = useState(false)
+
+  useEffect(() => {
+    if (!initialSyncStatus) {
+      setSyncing(true)
+      fetch(`/api/sync?slug=${workspace.slug}`, { method: 'POST' })
+        .then(() => router.refresh())
+        .finally(() => setSyncing(false))
+    }
+  }, [initialSyncStatus, workspace.slug, router])
 
   async function handleSync() {
     setSyncing(true)
