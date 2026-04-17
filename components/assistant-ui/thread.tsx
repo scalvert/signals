@@ -111,19 +111,18 @@ function AssistantIcon() {
   const message = useMessage()
   const isRunning = message.status?.type !== 'complete'
 
-  if (isRunning) {
-    return (
-      <>
-        <img src="/signals-spinner-black-32px.gif" alt="" className="w-4 h-4 dark:hidden" />
-        <img src="/signals-spinner-white-32px.gif" alt="" className="w-4 h-4 hidden dark:block" />
-      </>
-    )
-  }
-
   return (
     <>
-      <img src="/signals-icon-black-128px.png" alt="" className="w-3 h-3 dark:hidden" />
-      <img src="/signals-icon-white-128px.png" alt="" className="w-3 h-3 hidden dark:block" />
+      <img
+        src="/signals-icon-black-128px.png"
+        alt=""
+        className={`w-3.5 h-3.5 dark:hidden ${isRunning ? 'animate-pulse' : ''}`}
+      />
+      <img
+        src="/signals-icon-white-128px.png"
+        alt=""
+        className={`w-3.5 h-3.5 hidden dark:block ${isRunning ? 'animate-pulse' : ''}`}
+      />
     </>
   )
 }

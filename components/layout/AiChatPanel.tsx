@@ -69,9 +69,11 @@ export function AiChatPanel({ workspaceId, hasAiKey }: AiChatPanelProps) {
       </div>
 
       {hasAiKey ? (
-        <ChatRuntime workspaceId={workspaceId}>
-          <Thread />
-        </ChatRuntime>
+        <div className="flex-1 min-h-0">
+          <ChatRuntime workspaceId={workspaceId}>
+            <Thread />
+          </ChatRuntime>
+        </div>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
           <Sparkles className="w-8 h-8 text-muted-foreground/40 mb-3" />
