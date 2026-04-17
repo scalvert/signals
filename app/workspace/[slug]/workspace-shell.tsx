@@ -12,6 +12,7 @@ interface WorkspaceShellProps {
   allWorkspaces: Workspace[]
   syncStatus: SyncStatus | null
   hasAiKey: boolean
+  pendingTaskCount?: number
   currentUser?: User | null
   allUsers?: User[]
   workspaceCounts?: Record<number, number>
@@ -23,6 +24,7 @@ export function WorkspaceShell({
   allWorkspaces,
   syncStatus: initialSyncStatus,
   hasAiKey,
+  pendingTaskCount,
   currentUser,
   allUsers,
   workspaceCounts,
@@ -63,7 +65,7 @@ export function WorkspaceShell({
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-sans">
-      <Sidebar workspace={workspace} allWorkspaces={allWorkspaces} currentUser={currentUser} allUsers={allUsers} workspaceCounts={workspaceCounts} />
+      <Sidebar workspace={workspace} allWorkspaces={allWorkspaces} currentUser={currentUser} allUsers={allUsers} workspaceCounts={workspaceCounts} pendingTaskCount={pendingTaskCount} />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar
           workspace={workspace}

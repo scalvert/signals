@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getWorkspaces, getLatestSync } from '@/lib/db/queries'
+import { getWorkspaceBySlug, getWorkspaces, getLatestSync, getTasks } from '@/lib/db/queries'
 import { getAllUsers } from '@/lib/auth/users'
 import { getAuth } from '@/lib/auth/config'
 import { WorkspaceShell } from './workspace-shell'
@@ -18,6 +18,7 @@ export default async function WorkspaceLayout({
   const allWorkspaces = getWorkspaces()
   const syncStatus = getLatestSync(workspace.id)
   const hasAiKey = !!process.env.ANTHROPIC_API_KEY
+  const pendingTaskCount = getTasks(workspace.id, { status: 'pending' }).length
 
   const { auth } = getAuth()
   const session = await auth()
@@ -38,6 +39,7 @@ export default async function WorkspaceLayout({
       allWorkspaces={allWorkspaces}
       syncStatus={syncStatus}
       hasAiKey={hasAiKey}
+      pendingTaskCount={pendingTaskCount}
       currentUser={currentUser}
       allUsers={allUsers}
       workspaceCounts={workspaceCounts}

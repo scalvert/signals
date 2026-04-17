@@ -25,6 +25,7 @@ interface SidebarProps {
   currentUser?: User | null
   allUsers?: User[]
   workspaceCounts?: Record<number, number>
+  pendingTaskCount?: number
 }
 
 const navItems = [
@@ -32,7 +33,6 @@ const navItems = [
   { path: '/repos', label: 'Repositories', icon: GitBranch },
   { path: '/prs', label: 'Pull Requests', icon: GitPullRequest },
   { path: '/signals', label: 'Signal Feed', icon: Rss },
-  { path: '/work', label: 'Work', icon: Hammer },
   { path: '/insights', label: 'Insights', icon: BarChart3 },
 ]
 
@@ -45,7 +45,7 @@ function sourceSummary(workspace: Workspace): string {
   return parts.join(' · ')
 }
 
-export function Sidebar({ workspace, allWorkspaces, currentUser, allUsers, workspaceCounts }: SidebarProps) {
+export function Sidebar({ workspace, allWorkspaces, currentUser, allUsers, workspaceCounts, pendingTaskCount }: SidebarProps) {
   const pathname = usePathname()
   const basePath = `/workspace/${workspace.slug}`
   const [switcherOpen, setSwitcherOpen] = useState(false)
@@ -128,6 +128,26 @@ export function Sidebar({ workspace, allWorkspaces, currentUser, allUsers, works
             </Link>
           )
         })}
+
+        <div className="my-2 mx-3 border-t border-sidebar-border" />
+
+        <Link
+          href={`${basePath}/work`}
+          className={cn(
+            'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors',
+            pathname.includes('/work')
+              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+              : 'text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-white',
+          )}
+        >
+          <Hammer className="w-4 h-4 shrink-0" />
+          Tasks
+          {(pendingTaskCount ?? 0) > 0 && (
+            <span className="ml-auto text-[10px] font-semibold bg-sidebar-accent text-white px-1.5 py-0.5 rounded-full">
+              {pendingTaskCount}
+            </span>
+          )}
+        </Link>
       </nav>
 
       <div className="px-2 pb-1">
