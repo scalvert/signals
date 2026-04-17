@@ -55,7 +55,7 @@ export function SourceRepoSelector({ owner, type, selection, onChange }: SourceR
     if (forkFilter.size > 0) {
       result = result.filter((r) => {
         if (forkFilter.has('fork') && r.isFork) return true
-        if (forkFilter.has('source') && !r.isFork) return true
+        if (forkFilter.has('owned') && !r.isFork) return true
         return false
       })
     }
@@ -114,10 +114,10 @@ export function SourceRepoSelector({ owner, type, selection, onChange }: SourceR
   }, [repos])
 
   const forkOptions = useMemo(() => {
-    const counts = { source: 0, fork: 0 }
+    const counts = { owned: 0, fork: 0 }
     for (const r of repos) {
       if (r.isFork) counts.fork++
-      else counts.source++
+      else counts.owned++
     }
     return Object.entries(counts)
       .filter(([, count]) => count > 0)
