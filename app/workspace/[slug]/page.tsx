@@ -3,6 +3,7 @@ import {
   getWorkspaceBySlug,
   getRepos,
   getWorkspaceStats,
+  getTasks,
 } from '@/lib/db/queries'
 import { CommandCenter } from '@/components/screens/CommandCenter'
 
@@ -15,10 +16,9 @@ export default async function CommandCenterPage({
   const workspace = getWorkspaceBySlug(slug)
   if (!workspace) notFound()
 
-  const [repos, stats] = await Promise.all([
-    getRepos(workspace.id),
-    getWorkspaceStats(workspace.id),
-  ])
+  const repos = getRepos(workspace.id)
+  const stats = getWorkspaceStats(workspace.id)
+  const tasks = getTasks(workspace.id)
 
-  return <CommandCenter repos={repos} stats={stats} workspaceSlug={slug} />
+  return <CommandCenter repos={repos} stats={stats} tasks={tasks} workspaceSlug={slug} />
 }
