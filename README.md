@@ -2,6 +2,10 @@
 
 Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, triage PRs, and query your repos with AI — across all your GitHub orgs and projects in one place.
 
+![Signals Dashboard](screenshots/01-dashboard.png)
+
+> [See the full UI tour →](docs/tour.md)
+
 ## Features
 
 - **Health scoring** — deterministic 0–100 score per repo across four pillars (Activity, Community, Quality, Security) with actionable remediation
