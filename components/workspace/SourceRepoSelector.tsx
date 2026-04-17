@@ -133,9 +133,9 @@ export function SourceRepoSelector({ owner, type, selection, onChange }: SourceR
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[12px] font-semibold">{selectedCount} of {repos.length} selected</span>
-          <button onClick={selectAll} className="text-[11px] font-medium text-primary hover:underline">Select all</button>
+          <button type="button" onClick={selectAll} className="text-[11px] font-medium text-primary hover:underline">Select all</button>
           <span className="text-[11px] text-muted-foreground">&middot;</span>
-          <button onClick={clearAll} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">Clear</button>
+          <button type="button" onClick={clearAll} className="text-[11px] font-medium text-muted-foreground hover:text-foreground">Clear</button>
         </div>
       </div>
 
