@@ -40,8 +40,10 @@ export function Thread() {
         />
       </ThreadPrimitive.Viewport>
 
-      <FollowUpSuggestions />
-      <Composer />
+      <div className="shrink-0">
+        <FollowUpSuggestions />
+        <Composer />
+      </div>
     </ThreadPrimitive.Root>
   )
 }
@@ -107,7 +109,7 @@ function UserMessage() {
 
 function AssistantIcon() {
   const message = useMessage()
-  const isRunning = message.status?.type === 'running'
+  const isRunning = message.status?.type !== 'complete'
 
   if (isRunning) {
     return (
