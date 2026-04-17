@@ -7,6 +7,7 @@ export const externalPRRatioCheck: HealthCheck = {
     'Placeholder — requires PR data from sync. Defaults to 0.5.',
   pillar: 'community',
   weight: 0.5,
+  fixable: false,
   applies: () => true,
   run(_repo) {
     // This check needs PR-level data that isn't on the RepoSnapshot.

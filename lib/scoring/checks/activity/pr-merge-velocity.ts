@@ -7,6 +7,7 @@ export const prMergeVelocityCheck: HealthCheck = {
     'Ratio of open PRs to repo activity — lower means faster merging',
   pillar: 'activity',
   weight: 0.25,
+  fixable: false,
   applies: () => true,
   run(repo) {
     if (repo.openPRs === 0) {

@@ -6,6 +6,7 @@ export const commitFrequencyCheck: HealthCheck = {
   description: 'How recently the repository has been committed to',
   pillar: 'activity',
   weight: 0.4,
+  fixable: false,
   applies: () => true,
   run(repo) {
     if (!repo.lastCommitAt) {

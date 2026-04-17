@@ -40,6 +40,7 @@ export function scoreRepo(repo: RepoSnapshot, dismissedChecks?: Set<string>): Sc
       ...result,
       pillar: check.pillar,
       checkName: check.name,
+      fixable: check.fixable,
     }
 
     const pillar = pillarScores[check.pillar]

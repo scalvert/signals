@@ -228,7 +228,7 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
               {failingChecks
                 .sort(([, a], [, b]) => a.score - b.score)
                 .map(([id, result]) => (
-                  <CheckResultItem key={id} checkId={id} result={result} onToggleDismiss={() => toggleCheck(id)} onFix={async () => {
+                  <CheckResultItem key={id} checkId={id} result={result} onToggleDismiss={() => toggleCheck(id)} onFix={result.fixable ? async () => {
                     await fetch('/api/tasks', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
@@ -241,7 +241,7 @@ function RepoDetailPanel({ repo, workspaceId, onClose }: { repo: Repo; workspace
                         sourceId: id,
                       }),
                     })
-                  }} />
+                  } : undefined} />
                 ))}
               {dismissedFailingChecks
                 .sort(([, a], [, b]) => a.score - b.score)

@@ -26,6 +26,7 @@ export interface HealthCheck {
   description: string
   pillar: 'activity' | 'community' | 'quality' | 'security'
   weight: number
+  fixable: boolean
   applies: (repo: RepoSnapshot) => boolean
   run: (repo: RepoSnapshot) => CheckResult
 }

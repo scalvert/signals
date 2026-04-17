@@ -7,6 +7,7 @@ export const securityPlaceholderCheck: HealthCheck = {
     'Placeholder for OpenSSF Scorecard integration — returns 0.5 for all repos',
   pillar: 'security',
   weight: 1.0,
+  fixable: false,
   applies: () => true,
   run(_repo) {
     return {

@@ -6,6 +6,7 @@ export const releaseCadenceCheck: HealthCheck = {
   description: 'Whether the repository has published a recent release',
   pillar: 'activity',
   weight: 0.35,
+  fixable: false,
   applies: () => true,
   run(repo) {
     if (!repo.lastReleaseAt) {

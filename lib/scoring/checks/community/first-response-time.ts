@@ -7,6 +7,7 @@ export const firstResponseTimeCheck: HealthCheck = {
     'Placeholder — requires issue timeline data. Defaults to 0.5.',
   pillar: 'community',
   weight: 0.5,
+  fixable: false,
   applies: () => true,
   run(_repo) {
     // Computing actual first-response-time requires fetching issue timelines

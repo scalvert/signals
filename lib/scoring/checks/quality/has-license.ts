@@ -6,6 +6,7 @@ export const hasLicenseCheck: HealthCheck = {
   description: 'Repository has a LICENSE file',
   pillar: 'quality',
   weight: 0.3,
+  fixable: true,
   applies: () => true,
   run(repo) {
     return {

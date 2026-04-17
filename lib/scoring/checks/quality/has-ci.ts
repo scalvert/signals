@@ -6,6 +6,7 @@ export const hasCICheck: HealthCheck = {
   description: 'Repository has GitHub Actions workflows configured',
   pillar: 'quality',
   weight: 0.4,
+  fixable: true,
   applies: () => true,
   run(repo) {
     return {

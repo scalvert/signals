@@ -72,6 +72,7 @@ export interface CheckResultData {
   actionable?: string
   pillar: string
   checkName: string
+  fixable: boolean
 }
 
 export interface PullRequest {
