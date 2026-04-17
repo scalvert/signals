@@ -4,26 +4,32 @@ import {
   ThreadPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
+  useThreadRuntime,
+  useMessage,
 } from '@assistant-ui/react'
-import { Send, Sparkles } from 'lucide-react'
+import { Send } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+const quickChips = [
+  'Which repos need attention?',
+  'Show external PRs',
+  'What repos have low health?',
+  'Summarize this workspace',
+]
+
+const followUpChips = [
+  'What should I fix first?',
+  'Show me the details',
+  'Any stale PRs?',
+]
 
 export function Thread() {
   return (
     <ThreadPrimitive.Root className="flex flex-col h-full">
       <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
         <ThreadPrimitive.Empty>
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-            <Sparkles className="w-8 h-8 text-muted-foreground/40 mb-3" />
-            <p className="text-[13px] font-medium text-foreground mb-1">
-              Ask about your repos
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              I can analyze health scores, find stale PRs, summarize your
-              workspace, and more.
-            </p>
-          </div>
+          <WelcomeState />
         </ThreadPrimitive.Empty>
 
         <ThreadPrimitive.Messages
@@ -34,8 +40,58 @@ export function Thread() {
         />
       </ThreadPrimitive.Viewport>
 
+      <FollowUpSuggestions />
       <Composer />
     </ThreadPrimitive.Root>
+  )
+}
+
+function WelcomeState() {
+  const runtime = useThreadRuntime()
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+      <img src="/signals-icon-black-128px.png" alt="Signals" className="w-10 h-10 mb-3 dark:hidden" />
+      <img src="/signals-icon-white-128px.png" alt="Signals" className="w-10 h-10 mb-3 hidden dark:block" />
+      <p className="text-[13px] font-medium text-foreground mb-1">
+        Ask about your repos
+      </p>
+      <p className="text-[11px] text-muted-foreground mb-4">
+        I can analyze health scores, find stale PRs, summarize your
+        workspace, and more.
+      </p>
+      <div className="flex flex-wrap gap-1.5 justify-center">
+        {quickChips.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => runtime.append({ role: 'user', content: [{ type: 'text', text: chip }] })}
+            className="text-[11px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors bg-background"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FollowUpSuggestions() {
+  const runtime = useThreadRuntime()
+
+  return (
+    <ThreadPrimitive.If running={false} empty={false}>
+      <div className="px-3 pb-2 flex flex-wrap gap-1.5">
+        {followUpChips.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => runtime.append({ role: 'user', content: [{ type: 'text', text: chip }] })}
+            className="text-[10px] px-2 py-0.5 rounded-full border border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-colors bg-background"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+    </ThreadPrimitive.If>
   )
 }
 
@@ -49,11 +105,32 @@ function UserMessage() {
   )
 }
 
+function AssistantIcon() {
+  const message = useMessage()
+  const isRunning = message.status?.type === 'running'
+
+  if (isRunning) {
+    return (
+      <>
+        <img src="/signals-spinner-black-32px.gif" alt="" className="w-4 h-4 dark:hidden" />
+        <img src="/signals-spinner-white-32px.gif" alt="" className="w-4 h-4 hidden dark:block" />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <img src="/signals-icon-black-128px.png" alt="" className="w-3 h-3 dark:hidden" />
+      <img src="/signals-icon-white-128px.png" alt="" className="w-3 h-3 hidden dark:block" />
+    </>
+  )
+}
+
 function AssistantMessage() {
   return (
     <MessagePrimitive.Root className="flex flex-col items-start gap-1">
       <div className="flex items-center gap-1.5 mb-0.5">
-        <Sparkles className="w-3 h-3 text-muted-foreground" />
+        <AssistantIcon />
         <span className="text-[10px] font-semibold text-muted-foreground">
           Signals AI
         </span>
