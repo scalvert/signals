@@ -46,6 +46,7 @@ yarn-error.log*
 
 # superpowers
 .superpowers/
+docs/superpowers/
 
 # vercel
 .vercel
