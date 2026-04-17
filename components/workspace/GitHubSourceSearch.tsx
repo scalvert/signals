@@ -145,6 +145,8 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
           onFocus={() => (results || loading) && setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search GitHub orgs, users, or repos..."
+          spellCheck={false}
+          autoComplete="off"
           className="h-9 w-full pl-8 pr-3 text-[13px] rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
         />
       </div>
