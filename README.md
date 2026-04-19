@@ -3,16 +3,23 @@
 > [!WARNING]
 > Signals is under active development and not yet feature-complete. Some screens are rough, some features are stubbed, and the data model may change. That said — contributions, feedback, and ideas are very welcome. If something catches your eye, open an issue or a PR.
 
-Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, triage PRs, and query your repos with AI — across all your GitHub orgs and projects in one place.
+Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, dispatch fixes to coding agents, and query your repos with AI — across all your GitHub orgs and projects in one place.
 
 ![Signals Dashboard](screenshots/01-dashboard.png)
 
 > [See the full UI tour →](docs/tour.md)
 
+### Detect → Dispatch → Fix
+
+Signals turns health checks and signal detection into actionable tasks you can dispatch to coding agents.
+
+![Task Dispatch](screenshots/07-tasks.png)
+
 ## Features
 
 - **Health scoring** — deterministic 0–100 score per repo across four pillars (Activity, Community, Quality, Security) with actionable remediation
 - **Signal detection** — automated alerts for star spikes, dormant repos, stale PRs, health drops, and milestones
+- **Task dispatch** — turn signals into tasks and dispatch them to Claude Code, Cursor, Codex, or a custom webhook. Signals detects the problem; your coding agent fixes it.
 - **AI chat** — ask questions about your repos using Claude with tool-calling against your live data
 - **MCP server** — expose your repo data to Claude Code, Cursor, and other AI tools via Streamable HTTP
 - **Workspace model** — group repos by org, by project, or mix-and-match across orgs
