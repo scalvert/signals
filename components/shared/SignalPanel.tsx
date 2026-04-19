@@ -3,19 +3,34 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { TrendingUp, UserPlus, TrendingDown, AlertCircle, Star, GitPullRequest, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Signal, SignalType } from '@/types/workspace'
+import type { Signal } from '@/types/workspace'
 
-const signalMeta: Record<SignalType, {
+interface SignalMetaEntry {
   icon: React.ElementType
   color: string
   whyItMatters: string
   whatToDo: string
-}> = {
+}
+
+const defaultMeta: SignalMetaEntry = {
+  icon: AlertCircle,
+  color: 'text-muted-foreground',
+  whyItMatters: 'This signal detected a noteworthy change in your repository.',
+  whatToDo: 'Review the signal details and take appropriate action.',
+}
+
+const signalMeta: Record<string, SignalMetaEntry> = {
   'star-spike': {
     icon: TrendingUp,
     color: 'text-[var(--health-b)]',
     whyItMatters: 'A sudden increase in stars often indicates external attention — a blog post, HN mention, or newsletter feature. This is a growth opportunity.',
     whatToDo: 'Check referral sources (GitHub traffic analytics). Ensure README, contributing guide, and issues are welcoming for new visitors.',
+  },
+  'star-milestone': {
+    icon: Star,
+    color: 'text-[var(--health-b)]',
+    whyItMatters: 'Star milestones are community recognition moments. They are great opportunities for celebration and promotion.',
+    whatToDo: 'Consider a celebratory tweet, changelog entry, or thank-you to contributors. Update the README if it showcases star count.',
   },
   'new-contributor': {
     icon: UserPlus,
@@ -34,6 +49,24 @@ const signalMeta: Record<SignalType, {
     color: 'text-[var(--health-c)]',
     whyItMatters: 'A spike in issues can indicate a breaking release, a security vulnerability disclosure, or sudden popularity. Triaging quickly prevents backlog buildup.',
     whatToDo: 'Scan for patterns — are issues about the same topic? Label and categorize. Consider a pinned issue or discussion if it is a known problem.',
+  },
+  'stale-prs': {
+    icon: GitPullRequest,
+    color: 'text-[var(--health-c)]',
+    whyItMatters: 'Stale PRs signal slow review processes. External contributor PRs left unreviewed discourage future contributions.',
+    whatToDo: 'Review or close stale PRs. If you cannot review immediately, leave a comment acknowledging the contribution and set a timeline.',
+  },
+  'stale-bot-prs': {
+    icon: GitPullRequest,
+    color: 'text-[var(--health-c)]',
+    whyItMatters: 'Accumulated Dependabot or Renovate PRs indicate deferred dependency updates. This creates security and compatibility risk over time.',
+    whatToDo: 'Batch-merge or close bot PRs. Consider configuring auto-merge for patch updates in your Dependabot/Renovate config.',
+  },
+  'dormant-repo': {
+    icon: Activity,
+    color: 'text-[var(--health-d)]',
+    whyItMatters: 'Repos without commits appear abandoned to users and potential contributors. Open issues and PRs go unanswered.',
+    whatToDo: 'If the repo is stable and intentionally quiet, add a maintenance notice to the README. If it needs work, schedule a triage session for open issues.',
   },
   'pr-stale': {
     icon: GitPullRequest,
@@ -64,7 +97,7 @@ interface SignalPanelProps {
 export function SignalPanel({ signal, open, onClose }: SignalPanelProps) {
   if (!signal) return null
 
-  const meta = signalMeta[signal.type]
+  const meta = signalMeta[signal.type] ?? defaultMeta
   const Icon = meta.icon
   const metadata = signal.metadata as Record<string, unknown>
 

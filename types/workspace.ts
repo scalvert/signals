@@ -9,14 +9,7 @@ export interface User {
 export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F'
 export type TriageStatus = 'healthy' | 'watch' | 'critical'
 export type SignalSeverity = 'info' | 'warning' | 'critical'
-export type SignalType =
-  | 'star-spike'
-  | 'new-contributor'
-  | 'health-drop'
-  | 'issue-flood'
-  | 'pr-stale'
-  | 'milestone'
-  | 'dormant'
+export type SignalType = string
 
 export interface SourceRepoSelection {
   mode: 'all' | 'selected'

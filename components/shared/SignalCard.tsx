@@ -3,13 +3,19 @@
 import { useState } from 'react'
 import { TrendingUp, UserPlus, TrendingDown, AlertCircle, Star, GitPullRequest, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Signal, SignalType } from '@/types/workspace'
+import type { Signal } from '@/types/workspace'
 
-const signalIcons: Record<SignalType, { icon: React.ElementType; color: string; bg: string }> = {
+const defaultConfig = { icon: AlertCircle, color: 'text-muted-foreground', bg: 'bg-muted/10' }
+
+const signalIcons: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
   'star-spike': { icon: TrendingUp, color: 'text-[var(--health-b)]', bg: 'bg-[var(--health-b)]/10' },
+  'star-milestone': { icon: Star, color: 'text-[var(--health-b)]', bg: 'bg-[var(--health-b)]/10' },
   'new-contributor': { icon: UserPlus, color: 'text-[var(--health-a)]', bg: 'bg-[var(--health-a)]/10' },
   'health-drop': { icon: TrendingDown, color: 'text-[var(--health-d)]', bg: 'bg-[var(--health-d)]/10' },
   'issue-flood': { icon: AlertCircle, color: 'text-[var(--health-c)]', bg: 'bg-[var(--health-c)]/10' },
+  'stale-prs': { icon: GitPullRequest, color: 'text-[var(--health-c)]', bg: 'bg-[var(--health-c)]/10' },
+  'stale-bot-prs': { icon: GitPullRequest, color: 'text-[var(--health-c)]', bg: 'bg-[var(--health-c)]/10' },
+  'dormant-repo': { icon: Activity, color: 'text-[var(--health-d)]', bg: 'bg-[var(--health-d)]/10' },
   'pr-stale': { icon: GitPullRequest, color: 'text-[var(--health-c)]', bg: 'bg-[var(--health-c)]/10' },
   'milestone': { icon: Star, color: 'text-[var(--health-b)]', bg: 'bg-[var(--health-b)]/10' },
   'dormant': { icon: Activity, color: 'text-[var(--health-d)]', bg: 'bg-[var(--health-d)]/10' },
@@ -89,7 +95,7 @@ export function SignalCard({
   onTaskCreated?: () => void
 }) {
   const [showDismissForm, setShowDismissForm] = useState(false)
-  const config = signalIcons[signal.type] ?? signalIcons['health-drop']
+  const config = signalIcons[signal.type] ?? defaultConfig
   const Icon = config.icon
   const displayBody = signal.enrichedBody ?? signal.body
 

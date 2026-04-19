@@ -5,10 +5,9 @@ import { getRepos, getSignals, getDismissedChecks, getTasks, updateTaskStatus, a
 import { getUserToken } from '@/lib/auth/users'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
-import { scoreRepo } from '@/lib/scoring/engine'
-import { runSignalDetection } from '@/lib/signals/engine'
-import type { Workspace, WorkspaceSource } from '@/types/workspace'
-import type { RepoSnapshot } from '@/lib/scoring/types'
+import { scoreRepo, runSignalDetection } from '@/lib/signals/engine'
+import type { Workspace, WorkspaceSource, PullRequest } from '@/types/workspace'
+import type { RepoSnapshot } from '@/lib/signals/types'
 
 export function filterReposBySourceSelection<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(repos: T[], sources: WorkspaceSource[]): T[] {
   const included = new Set<string>()
@@ -94,7 +93,15 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
       }
 
       const dismissed = getDismissedChecks(workspace.id, raw.fullName)
-      const scored = scoreRepo(snapshot, dismissed)
+      const repoPRs: PullRequest[] = rawPRs
+        .filter((pr) => pr.repoFullName === raw.fullName)
+        .map((pr) => ({
+          ...pr,
+          id: 0,
+          daysSinceUpdate: Math.floor((Date.now() - new Date(pr.updatedAt).getTime()) / (1000 * 60 * 60 * 24)),
+          workspaceId: workspace.id,
+        }))
+      const scored = scoreRepo(snapshot, repoPRs, dismissed)
 
       db.insert(repos)
         .values({
