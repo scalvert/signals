@@ -23,6 +23,7 @@ const mockSignal: Signal = {
   status: 'active',
   dismissedReason: null,
   enrichedBody: null,
+  fixable: false,
 }
 
 describe('enrichSignals', () => {

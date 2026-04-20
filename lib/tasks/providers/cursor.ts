@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { buildPrompt } from '../prompts'
+import { buildTaskPrompt } from '../prompts'
 import type { AgentProvider, DispatchResult } from '../types'
 import type { Task } from '@/types/workspace'
 
@@ -8,7 +8,7 @@ export const cursorProvider: AgentProvider = {
   mode: 'local',
 
   async dispatch(task: Task): Promise<DispatchResult> {
-    const prompt = buildPrompt(task)
+    const prompt = buildTaskPrompt(task)
 
     return new Promise((resolve) => {
       execFile('cursor', ['--prompt', prompt], {

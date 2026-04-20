@@ -1,4 +1,4 @@
-import { buildPrompt } from '../prompts'
+import { buildTaskPrompt } from '../prompts'
 import type { AgentProvider, DispatchResult, ProviderConfig } from '../types'
 import type { Task } from '@/types/workspace'
 
@@ -12,7 +12,7 @@ export function createCustomProvider(config: ProviderConfig): AgentProvider {
         return { success: false, error: 'No endpoint configured for custom provider' }
       }
 
-      const prompt = buildPrompt(task, { includeMcpInstructions: true })
+      const prompt = buildTaskPrompt(task, { includeMcpInstructions: true })
 
       try {
         const res = await fetch(config.endpoint, {

@@ -124,7 +124,18 @@ function parseSignalRow(row: typeof signals.$inferSelect): Signal {
     dismissedReason: row.dismissedReason ?? null,
     enrichedBody: row.enrichedBody ?? null,
     metadata: JSON.parse(row.metadata) as Record<string, unknown>,
+    fixable: row.fixable === 1,
   }
+}
+
+export function getSignalById(id: number): Signal | undefined {
+  const row = db
+    .select()
+    .from(signals)
+    .where(eq(signals.id, id))
+    .get()
+  if (!row) return undefined
+  return parseSignalRow(row)
 }
 
 export function getSignals(
@@ -373,6 +384,48 @@ function parseTaskRow(row: typeof tasks.$inferSelect): Task {
     completedAt: row.completedAt ?? null,
     notes: JSON.parse(row.notes) as TaskNote[],
   }
+}
+
+export function getTasksBySource(
+  workspaceId: number,
+  sourceType: 'signal' | 'check',
+): Map<string, Task> {
+  const rows = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.workspaceId, workspaceId))
+    .all()
+
+  const map = new Map<string, Task>()
+  for (const row of rows) {
+    const task = parseTaskRow(row)
+    if (task.sourceType !== sourceType) continue
+    if (task.status === 'failed') continue
+    map.set(task.sourceId, task)
+  }
+  return map
+}
+
+export function getActiveTaskForSource(
+  workspaceId: number,
+  sourceType: 'signal' | 'check',
+  sourceId: string,
+): Task | undefined {
+  const rows = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.workspaceId, workspaceId))
+    .all()
+
+  return rows
+    .map(parseTaskRow)
+    .find(
+      (t) =>
+        t.sourceType === sourceType &&
+        t.sourceId === sourceId &&
+        t.status !== 'verified' &&
+        t.status !== 'failed',
+    )
 }
 
 export function getTasks(

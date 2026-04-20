@@ -185,7 +185,12 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
       let verified = false
       if (task.sourceType === 'check') {
         const check = repo.checkResults[task.sourceId]
-        if (check && check.score >= 0.7) verified = true
+        if (!check) {
+          updateTaskStatus(task.id, 'failed')
+          addTaskNote(task.id, 'Source check no longer exists — check was removed from the signal registry.', 'system')
+          continue
+        }
+        if (check.score >= 0.7) verified = true
       } else if (task.sourceType === 'signal') {
         const activeSignals = getSignals(workspace.id, { status: 'active' })
         const stillActive = activeSignals.some(

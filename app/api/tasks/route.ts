@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createTask, getTasks } from '@/lib/db/queries'
+import { createTask, getTasks, getActiveTaskForSource } from '@/lib/db/queries'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -29,6 +29,14 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: 'workspaceId, repoFullName, title, description, sourceType, and sourceId are required' },
       { status: 400 },
+    )
+  }
+
+  const existing = getActiveTaskForSource(workspaceId, sourceType, sourceId)
+  if (existing) {
+    return NextResponse.json(
+      { error: 'A task already exists for this item', task: existing },
+      { status: 409 },
     )
   }
 

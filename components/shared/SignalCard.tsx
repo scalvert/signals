@@ -3,7 +3,14 @@
 import { useState } from 'react'
 import { TrendingUp, UserPlus, TrendingDown, AlertCircle, Star, GitPullRequest, Activity } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Signal } from '@/types/workspace'
+import type { Signal, Task } from '@/types/workspace'
+
+const taskStatusLabels: Record<string, { label: string; className: string }> = {
+  pending: { label: 'Pending', className: 'text-muted-foreground border-border' },
+  dispatched: { label: 'Dispatched', className: 'text-[var(--health-b)] border-[var(--health-b)]/30 bg-[var(--health-b)]/8' },
+  completed: { label: 'Completed', className: 'text-[var(--health-a)] border-[var(--health-a)]/30 bg-[var(--health-a)]/8' },
+  verified: { label: 'Verified', className: 'text-[var(--health-a)] border-[var(--health-a)]/30 bg-[var(--health-a)]/8' },
+}
 
 const defaultConfig = { icon: AlertCircle, color: 'text-muted-foreground', bg: 'bg-muted/10' }
 
@@ -82,6 +89,7 @@ export function SignalCard({
   showDismissAction,
   showRestoreAction,
   workspaceId,
+  task,
   onDismissed,
   onRestored,
   onTaskCreated,
@@ -90,6 +98,7 @@ export function SignalCard({
   showDismissAction: boolean
   showRestoreAction: boolean
   workspaceId?: number
+  task?: Task
   onDismissed?: () => void
   onRestored?: () => void
   onTaskCreated?: () => void
@@ -119,11 +128,20 @@ export function SignalCard({
             </div>
             {showDismissAction && !showDismissForm && (
               <>
-                {workspaceId && (
+                {task ? (
+                  <span
+                    className={cn(
+                      'text-[11px] font-medium px-2 py-0.5 rounded-full border',
+                      taskStatusLabels[task.status]?.className ?? 'text-muted-foreground border-border',
+                    )}
+                  >
+                    {taskStatusLabels[task.status]?.label ?? task.status}
+                  </span>
+                ) : workspaceId && signal.fixable ? (
                   <button
                     onClick={async (e) => {
                       e.stopPropagation()
-                      await fetch('/api/tasks', {
+                      const res = await fetch('/api/tasks', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -135,13 +153,14 @@ export function SignalCard({
                           sourceId: String(signal.id),
                         }),
                       })
+                      if (res.status === 409) return
                       onTaskCreated?.()
                     }}
                     className="text-[11px] font-medium text-primary hover:underline transition-colors"
                   >
                     Fix this
                   </button>
-                )}
+                ) : null}
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowDismissForm(true) }}
                   className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"

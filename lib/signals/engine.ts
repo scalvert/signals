@@ -222,6 +222,7 @@ export async function runSignalDetection(
         repoFullName: signal.repoFullName,
         metadata: JSON.stringify(signal.metadata),
         detectedAt: now,
+        fixable: registry.get(signal.type)?.meta.fixable ? 1 : 0,
       })
       .returning()
       .get()
@@ -233,6 +234,7 @@ export async function runSignalDetection(
       dismissedReason: null,
       enrichedBody: null,
       metadata: JSON.parse(result.metadata) as Record<string, unknown>,
+      fixable: result.fixable === 1,
     })
   }
 

@@ -86,6 +86,7 @@ export const signals = sqliteTable('signals', {
   status: text('status').notNull().default('active'),
   dismissedReason: text('dismissed_reason'),
   enrichedBody: text('enriched_body'),
+  fixable: integer('fixable').notNull().default(0),
 })
 
 export const syncLog = sqliteTable('sync_log', {

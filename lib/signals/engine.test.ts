@@ -86,6 +86,7 @@ function makeSignal(overrides: Partial<Signal> = {}): Signal {
     status: 'active',
     dismissedReason: null,
     enrichedBody: null,
+    fixable: false,
     ...overrides,
   }
 }

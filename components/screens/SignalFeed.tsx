@@ -6,16 +6,18 @@ import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { SignalCard } from '@/components/shared/SignalCard'
 import { SignalPanel } from '@/components/shared/SignalPanel'
-import type { Signal } from '@/types/workspace'
+import type { Signal, Task } from '@/types/workspace'
 
 export function SignalFeed({
   activeSignals,
   dismissedSignals,
   workspaceId,
+  signalTasks = {},
 }: {
   activeSignals: Signal[]
   dismissedSignals: Signal[]
   workspaceId: number
+  signalTasks?: Record<string, Task>
 }) {
   const [tab, setTab] = useState<'active' | 'dismissed'>('active')
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null)
@@ -92,6 +94,7 @@ export function SignalFeed({
                 showDismissAction={tab === 'active'}
                 showRestoreAction={tab === 'dismissed'}
                 workspaceId={workspaceId}
+                task={signalTasks[String(signal.id)]}
                 onDismissed={handleDismissed}
                 onRestored={handleDismissed}
               />

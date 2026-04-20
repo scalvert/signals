@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getSignals } from '@/lib/db/queries'
+import { getWorkspaceBySlug, getSignals, getTasksBySource } from '@/lib/db/queries'
 import { SignalFeed } from '@/components/screens/SignalFeed'
 
 export default async function SignalsPage({
@@ -13,11 +13,14 @@ export default async function SignalsPage({
 
   const activeSignals = getSignals(workspace.id, { status: 'active' })
   const dismissedSignals = getSignals(workspace.id, { status: 'dismissed' })
+  const signalTasks = getTasksBySource(workspace.id, 'signal')
+  const serializedTasks = Object.fromEntries(signalTasks)
   return (
     <SignalFeed
       activeSignals={activeSignals}
       dismissedSignals={dismissedSignals}
       workspaceId={workspace.id}
+      signalTasks={serializedTasks}
     />
   )
 }

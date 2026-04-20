@@ -1,4 +1,4 @@
-import { buildPrompt } from '../prompts'
+import { buildTaskPrompt } from '../prompts'
 import type { AgentProvider, DispatchResult, ProviderConfig } from '../types'
 import type { Task } from '@/types/workspace'
 
@@ -13,7 +13,7 @@ export function createCodexProvider(config: ProviderConfig): AgentProvider {
         return { success: false, error: 'No API key configured for Codex provider' }
       }
 
-      const prompt = buildPrompt(task, { includeMcpInstructions: true })
+      const prompt = buildTaskPrompt(task, { includeMcpInstructions: true })
 
       try {
         const res = await fetch('https://api.anthropic.com/v1/messages', {

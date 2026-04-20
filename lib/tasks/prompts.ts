@@ -1,6 +1,20 @@
 import type { Task } from '@/types/workspace'
+import { registry } from '@/lib/signals/registry'
+import '@/lib/signals/definitions'
+import { getSignalById, getRepoContextsForWorkspace } from '@/lib/db/queries'
 
-export function buildPrompt(task: Task, options?: { includeMcpInstructions?: boolean }): string {
+export interface PromptSignalContext {
+  rationale: string
+  fixGuidance?: string
+  docsSummary: string
+  repoContext?: string
+  metadata?: Record<string, unknown>
+}
+
+export function buildPrompt(
+  task: Task,
+  options?: { includeMcpInstructions?: boolean; signalContext?: PromptSignalContext },
+): string {
   const lines = [
     `You are working on the repository ${task.repoFullName}.`,
     '',
@@ -9,12 +23,27 @@ export function buildPrompt(task: Task, options?: { includeMcpInstructions?: boo
     '',
     '## Context',
     task.description,
+  ]
+
+  if (options?.signalContext) {
+    const ctx = options.signalContext
+    lines.push('', '## Why this matters', ctx.rationale)
+    if (ctx.fixGuidance) {
+      lines.push('', '## Fix guidance', ctx.fixGuidance)
+    }
+    lines.push('', '## Signal details', ctx.docsSummary)
+    if (ctx.repoContext) {
+      lines.push('', '## Repository context', ctx.repoContext)
+    }
+  }
+
+  lines.push(
     '',
     '## Instructions',
     '- Fix the issue described above',
     '- Run tests to verify your fix',
     '- Commit your changes with a clear commit message',
-  ]
+  )
 
   if (options?.includeMcpInstructions) {
     lines.push(
@@ -30,4 +59,32 @@ export function buildPrompt(task: Task, options?: { includeMcpInstructions?: boo
   }
 
   return lines.join('\n')
+}
+
+export function getPromptContext(task: Task): PromptSignalContext | undefined {
+  let defn
+  if (task.sourceType === 'check') {
+    defn = registry.get(task.sourceId)
+  } else if (task.sourceType === 'signal') {
+    const signal = getSignalById(Number(task.sourceId))
+    if (signal) defn = registry.get(signal.type)
+  }
+  if (!defn) return undefined
+
+  const repoContexts = getRepoContextsForWorkspace(task.workspaceId)
+
+  return {
+    rationale: defn.meta.rationale,
+    fixGuidance: defn.meta.fixInfo?.description,
+    docsSummary: defn.meta.docs.summary,
+    repoContext: repoContexts.get(task.repoFullName),
+  }
+}
+
+export function buildTaskPrompt(
+  task: Task,
+  options?: { includeMcpInstructions?: boolean },
+): string {
+  const signalContext = getPromptContext(task)
+  return buildPrompt(task, { ...options, signalContext })
 }

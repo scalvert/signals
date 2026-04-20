@@ -99,6 +99,7 @@ export interface Signal {
   status: 'active' | 'dismissed'
   dismissedReason: string | null
   enrichedBody: string | null
+  fixable: boolean
 }
 
 export interface RepoContext {
