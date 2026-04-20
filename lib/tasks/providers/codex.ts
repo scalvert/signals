@@ -1,4 +1,4 @@
-import { buildTaskPrompt } from '../prompts'
+import { buildTaskPrompt } from '../prompt-context'
 import type { AgentProvider, DispatchResult, ProviderConfig } from '../types'
 import type { Task } from '@/types/workspace'
 

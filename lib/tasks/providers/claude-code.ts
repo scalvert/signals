@@ -1,5 +1,5 @@
 import { execFile } from 'child_process'
-import { buildTaskPrompt } from '../prompts'
+import { buildTaskPrompt } from '../prompt-context'
 import type { AgentProvider, DispatchResult } from '../types'
 import type { Task } from '@/types/workspace'
 
