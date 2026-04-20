@@ -71,6 +71,13 @@
       "when": 1776296591584,
       "tag": "0009_calm_annihilus",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1776723151090,
+      "tag": "0010_fat_next_avengers",
+      "breakpoints": true
     }
   ]
 }

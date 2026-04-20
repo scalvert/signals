@@ -22,6 +22,12 @@ function getTags(pr: PullRequest): string[] {
   return tags
 }
 
+function getAttentionBorder(pr: PullRequest): string {
+  if (pr.ciState === 'failing') return 'border-l-3 border-l-health-d'
+  if (pr.isStale) return 'border-l-3 border-l-health-c'
+  return 'border-l-3 border-l-health-a'
+}
+
 export function PullRequests({ prs }: { prs: PullRequest[] }) {
   const [activeFilter, setActiveFilter] = useState('All')
 
@@ -53,7 +59,7 @@ export function PullRequests({ prs }: { prs: PullRequest[] }) {
           const initials = pr.authorLogin.slice(0, 2).toUpperCase()
           return (
             <div key={`${pr.repoFullName}#${pr.number}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
+              className={cn('flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer', getAttentionBorder(pr))}>
               <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <span className="text-[10px] font-bold text-muted-foreground">{initials}</span>
               </div>

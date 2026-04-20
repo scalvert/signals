@@ -8,10 +8,16 @@ import { HealthBadge } from '@/components/shared/HealthBadge'
 import { PillarBar } from '@/components/shared/PillarBar'
 import { MultiSelectFilter } from '@/components/shared/MultiSelectFilter'
 import { languagePillColors } from '@/lib/constants'
-import type { Repo } from '@/types/workspace'
+import type { Repo, TriageStatus } from '@/types/workspace'
 
 type SortKey = 'name' | 'org' | 'score' | 'stars' | 'openIssues' | 'openPRs' | 'lastCommitAt'
 type SortDir = 'asc' | 'desc'
+
+const triageBorderLeft: Record<TriageStatus, string> = {
+  healthy: 'border-l-3 border-l-health-a',
+  watch: 'border-l-3 border-l-health-c',
+  critical: 'border-l-3 border-l-health-d',
+}
 
 const pillarLabels: Record<string, string> = {
   activity: 'Activity',
@@ -273,14 +279,17 @@ function getOrg(repo: Repo): string {
   return repo.fullName.split('/')[0]
 }
 
-export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceId: number }) {
+export function Repositories({ repos, workspaceId, initialSelectedRepo }: { repos: Repo[]; workspaceId: number; initialSelectedRepo?: string }) {
   const [search, setSearch] = useState('')
   const [orgFilter, setOrgFilter] = useState<Set<string>>(new Set())
   const [langFilter, setLangFilter] = useState<Set<string>>(new Set())
   const [healthFilter, setHealthFilter] = useState<Set<string>>(new Set())
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
-  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(null)
+  const [selectedRepo, setSelectedRepo] = useState<Repo | null>(() => {
+    if (!initialSelectedRepo) return null
+    return repos.find((r) => r.fullName === initialSelectedRepo) ?? null
+  })
 
   const orgOptions = useMemo(() => {
     const counts = new Map<string, number>()
@@ -389,7 +398,7 @@ export function Repositories({ repos, workspaceId }: { repos: Repo[]; workspaceI
               <tbody className="divide-y divide-border">
                 {filteredRepos.map((repo) => (
                   <tr key={repo.id} onClick={() => setSelectedRepo(repo)}
-                    className={cn('hover:bg-muted/30 transition-colors cursor-pointer', selectedRepo?.id === repo.id && 'bg-muted/50')}>
+                    className={cn('hover:bg-muted/30 transition-colors cursor-pointer', selectedRepo?.id === repo.id && 'bg-muted/50', triageBorderLeft[repo.triage])}>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-foreground text-[13px] flex items-center gap-1.5">
                         {repo.name}

@@ -98,7 +98,7 @@ export function CommandCenter({ repos, stats, tasks, workspaceSlug }: CommandCen
                   </span>
                 </div>
                 {sectionRepos.map((repo) => (
-                  <Link key={repo.id} href={`${base}/repos`}>
+                  <Link key={repo.id} href={`${base}/repos?repo=${encodeURIComponent(repo.fullName)}`}>
                     <RepoCard repo={repo} />
                   </Link>
                 ))}
