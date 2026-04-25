@@ -44,6 +44,7 @@ describe('new-contributor', () => {
       pullRequests: [
         makePR({
           authorLogin: 'dependabot[bot]',
+          isBot: true,
           authorAssociation: 'FIRST_TIME_CONTRIBUTOR',
         }),
       ],

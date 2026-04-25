@@ -48,7 +48,7 @@ describe('stale-prs', () => {
   it('excludes bot PRs (dependabot)', () => {
     const result = evaluate({
       pullRequests: [
-        makePR({ authorLogin: 'dependabot[bot]', isExternal: true, daysSinceUpdate: 30 }),
+        makePR({ authorLogin: 'dependabot[bot]', isBot: true, isExternal: true, daysSinceUpdate: 30 }),
       ],
     })
     expect(result).toBeNull()
@@ -57,7 +57,7 @@ describe('stale-prs', () => {
   it('excludes bot PRs (renovate)', () => {
     const result = evaluate({
       pullRequests: [
-        makePR({ authorLogin: 'renovate[bot]', isExternal: true, daysSinceUpdate: 30 }),
+        makePR({ authorLogin: 'renovate[bot]', isBot: true, isExternal: true, daysSinceUpdate: 30 }),
       ],
     })
     expect(result).toBeNull()
@@ -67,7 +67,7 @@ describe('stale-prs', () => {
     const result = evaluate({
       pullRequests: [
         makePR({ number: 1, authorLogin: 'human', isExternal: true, daysSinceUpdate: 10 }),
-        makePR({ number: 2, authorLogin: 'dependabot[bot]', isExternal: true, daysSinceUpdate: 30 }),
+        makePR({ number: 2, authorLogin: 'dependabot[bot]', isBot: true, isExternal: true, daysSinceUpdate: 30 }),
       ],
     })
     expect(result).not.toBeNull()

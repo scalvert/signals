@@ -11,7 +11,7 @@ function evaluate(overrides = {}) {
 describe('stale-bot-prs', () => {
   it('fires when 5+ bot PRs pile up', () => {
     const prs = Array.from({ length: 6 }, (_, i) =>
-      makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true }),
     )
     const result = evaluate({ pullRequests: prs })
     expect(result).not.toBeNull()
@@ -21,7 +21,7 @@ describe('stale-bot-prs', () => {
 
   it('does not fire with fewer than 5 bot PRs', () => {
     const prs = Array.from({ length: 4 }, (_, i) =>
-      makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true }),
     )
     const result = evaluate({ pullRequests: prs })
     expect(result).toBeNull()
@@ -30,7 +30,7 @@ describe('stale-bot-prs', () => {
   it('only counts bot PRs, not human PRs', () => {
     const prs = [
       ...Array.from({ length: 3 }, (_, i) =>
-        makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+        makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true }),
       ),
       ...Array.from({ length: 5 }, (_, i) =>
         makePR({ number: i + 10, authorLogin: `human-${i}` }),
@@ -42,7 +42,7 @@ describe('stale-bot-prs', () => {
 
   it('excludes draft bot PRs', () => {
     const prs = Array.from({ length: 6 }, (_, i) =>
-      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isDraft: true }),
+      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true, isDraft: true }),
     )
     const result = evaluate({ pullRequests: prs })
     expect(result).toBeNull()
@@ -51,10 +51,10 @@ describe('stale-bot-prs', () => {
   it('identifies unique bot authors', () => {
     const prs = [
       ...Array.from({ length: 3 }, (_, i) =>
-        makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+        makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true }),
       ),
       ...Array.from({ length: 3 }, (_, i) =>
-        makePR({ number: i + 10, authorLogin: 'renovate[bot]' }),
+        makePR({ number: i + 10, authorLogin: 'renovate[bot]', isBot: true }),
       ),
     ]
     const result = evaluate({ pullRequests: prs })
@@ -66,7 +66,7 @@ describe('stale-bot-prs', () => {
 
   it('severity is always warning', () => {
     const prs = Array.from({ length: 10 }, (_, i) =>
-      makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true }),
     )
     const result = evaluate({ pullRequests: prs })
     expect(result!.severity).toBe('warning')

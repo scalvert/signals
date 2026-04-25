@@ -27,7 +27,7 @@ export interface GitHubPRNode {
   isDraft: boolean
   createdAt: string
   updatedAt: string
-  author: { login: string } | null
+  author: { login: string; __typename: string } | null
   authorAssociation: string
   commits: {
     nodes: Array<{

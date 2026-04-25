@@ -28,7 +28,7 @@ export const newContributor: SignalDefinition = {
 
     for (const pr of pullRequests) {
       if (!FIRST_TIME_ASSOCIATIONS.has(pr.authorAssociation)) continue
-      if (isBot(pr.authorLogin)) continue
+      if (isBot(pr)) continue
 
       const alreadyDetected = existingSignals.some(
         (s) =>

@@ -153,6 +153,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
           url: pr.url,
           authorLogin: pr.authorLogin,
           authorAssociation: pr.authorAssociation,
+          isBot: pr.isBot,
           repoFullName: pr.repoFullName,
           isDraft: pr.isDraft,
           ciState: pr.ciState,

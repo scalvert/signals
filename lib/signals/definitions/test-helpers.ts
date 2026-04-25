@@ -40,6 +40,7 @@ export function makePR(overrides: Partial<PullRequest> = {}): PullRequest {
     authorLogin: 'contributor',
     authorAssociation: 'CONTRIBUTOR',
     repoFullName: 'org/test-repo',
+    isBot: false,
     isDraft: false,
     ciState: 'passing',
     createdAt: new Date().toISOString(),

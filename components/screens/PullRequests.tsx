@@ -81,14 +81,16 @@ function PRRow({ pr }: { pr: PullRequest }) {
   )
 }
 
-function BotGroupRow({ author, prs, isExpanded, onToggle }: {
-  author: string
+function BotGroupRow({ groupKey, prs, isExpanded, onToggle }: {
+  groupKey: string
   prs: PullRequest[]
   isExpanded: boolean
   onToggle: () => void
 }) {
   const { failing, stale } = getGroupStats(prs)
   const Chevron = isExpanded ? ChevronDown : ChevronRight
+  const botName = groupKey.split('::')[0]
+  const repoName = prs[0].repoFullName.split('/')[1]
 
   return (
     <>
@@ -100,8 +102,11 @@ function BotGroupRow({ author, prs, isExpanded, onToggle }: {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-semibold text-foreground">{author}</span>
-            <span className="text-[11px] text-muted-foreground">· {prs.length} PR{prs.length !== 1 ? 's' : ''}</span>
+            <span className="text-[13px] font-semibold text-foreground">{botName}</span>
+            <span className="text-[11px] text-muted-foreground">
+              · <span className="font-medium text-foreground/70">{repoName}</span>
+              {' · '}{prs.length} PR{prs.length !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -134,7 +139,7 @@ export function PullRequests({ prs }: { prs: PullRequest[] }) {
   const filtered = prs.filter((pr) => {
     if (activeFilter === 'All') return true
     if (activeFilter === 'Draft') return pr.isDraft
-    if (activeFilter === 'Bot') return isBot(pr.authorLogin)
+    if (activeFilter === 'Bot') return isBot(pr)
     return getTags(pr).includes(activeFilter)
   })
 
@@ -143,10 +148,11 @@ export function PullRequests({ prs }: { prs: PullRequest[] }) {
     const bots = new Map<string, PullRequest[]>()
 
     for (const pr of filtered) {
-      if (isBot(pr.authorLogin)) {
-        const group = bots.get(pr.authorLogin) ?? []
+      if (isBot(pr)) {
+        const key = `${pr.authorLogin}::${pr.repoFullName}`
+        const group = bots.get(key) ?? []
         group.push(pr)
-        bots.set(pr.authorLogin, group)
+        bots.set(key, group)
       } else {
         human.push(pr)
       }
@@ -186,13 +192,13 @@ export function PullRequests({ prs }: { prs: PullRequest[] }) {
         {humanPRs.map((pr) => (
           <PRRow key={`${pr.repoFullName}#${pr.number}`} pr={pr} />
         ))}
-        {Array.from(botGroups.entries()).map(([author, groupPrs]) => (
+        {Array.from(botGroups.entries()).map(([key, groupPrs]) => (
           <BotGroupRow
-            key={author}
-            author={author}
+            key={key}
+            groupKey={key}
             prs={groupPrs}
-            isExpanded={expandedBots.has(author)}
-            onToggle={() => toggleBot(author)}
+            isExpanded={expandedBots.has(key)}
+            onToggle={() => toggleBot(key)}
           />
         ))}
         {totalCount === 0 && (

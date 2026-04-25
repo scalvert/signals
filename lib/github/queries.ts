@@ -115,7 +115,7 @@ export const ORG_PRS_QUERY = `
               isDraft
               createdAt
               updatedAt
-              author { login }
+              author { login __typename }
               authorAssociation
               commits(last: 1) {
                 nodes {
@@ -147,7 +147,7 @@ export const USER_PRS_QUERY = `
               isDraft
               createdAt
               updatedAt
-              author { login }
+              author { login __typename }
               authorAssociation
               commits(last: 1) {
                 nodes {
@@ -228,7 +228,7 @@ export const SINGLE_REPO_PRS_QUERY = `
           isDraft
           createdAt
           updatedAt
-          author { login }
+          author { login __typename }
           authorAssociation
           commits(last: 1) {
             nodes {

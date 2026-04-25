@@ -15,6 +15,7 @@ interface RawPullRequest {
   url: string
   authorLogin: string
   authorAssociation: string
+  isBot: boolean
   repoFullName: string
   isDraft: boolean
   ciState: 'passing' | 'failing' | 'pending' | 'unknown'
@@ -155,6 +156,7 @@ function parsePRNode(
     url: node.url,
     authorLogin: node.author?.login ?? 'ghost',
     authorAssociation: node.authorAssociation,
+    isBot: node.author?.__typename === 'Bot',
     repoFullName,
     isDraft: node.isDraft,
     ciState,

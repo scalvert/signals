@@ -1,5 +1,6 @@
-export function isBot(authorLogin: string): boolean {
-  return authorLogin.includes('[bot]')
+export function isBot(pr: { isBot?: boolean; authorLogin: string }): boolean {
+  if (pr.isBot !== undefined) return pr.isBot
+  return pr.authorLogin.includes('[bot]')
 }
 
 export function daysAgo(dateStr: string): number {

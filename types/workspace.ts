@@ -75,6 +75,7 @@ export interface PullRequest {
   url: string
   authorLogin: string
   authorAssociation: string
+  isBot: boolean
   repoFullName: string
   isDraft: boolean
   ciState: 'passing' | 'failing' | 'pending' | 'unknown'

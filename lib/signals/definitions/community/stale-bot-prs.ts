@@ -26,7 +26,7 @@ export const staleBotPRs: SignalDefinition = {
 
   evaluate({ repo, pullRequests }) {
     const botPRs = pullRequests.filter(
-      (pr) => !pr.isDraft && isBot(pr.authorLogin),
+      (pr) => !pr.isDraft && isBot(pr),
     )
 
     if (botPRs.length < BOT_PR_THRESHOLD) return null

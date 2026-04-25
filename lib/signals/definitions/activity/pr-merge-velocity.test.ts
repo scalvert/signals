@@ -49,8 +49,8 @@ describe('pr-merge-velocity', () => {
   it('excludes bot PRs from the count', () => {
     const prs = [
       makePR({ number: 1, authorLogin: 'human-user' }),
-      makePR({ number: 2, authorLogin: 'dependabot[bot]' }),
-      makePR({ number: 3, authorLogin: 'renovate[bot]' }),
+      makePR({ number: 2, authorLogin: 'dependabot[bot]', isBot: true }),
+      makePR({ number: 3, authorLogin: 'renovate[bot]', isBot: true }),
     ]
     const result = evaluate({ pullRequests: prs })
     expect(result.score).toBe(0.8)
@@ -59,8 +59,8 @@ describe('pr-merge-velocity', () => {
 
   it('scores 1.0 when all PRs are from bots', () => {
     const prs = [
-      makePR({ number: 1, authorLogin: 'dependabot[bot]' }),
-      makePR({ number: 2, authorLogin: 'renovate[bot]' }),
+      makePR({ number: 1, authorLogin: 'dependabot[bot]', isBot: true }),
+      makePR({ number: 2, authorLogin: 'renovate[bot]', isBot: true }),
     ]
     const result = evaluate({ pullRequests: prs })
     expect(result.score).toBe(1.0)
@@ -70,7 +70,7 @@ describe('pr-merge-velocity', () => {
   it('includes bot exclusion count in evidence', () => {
     const prs = [
       makePR({ number: 1, authorLogin: 'user' }),
-      makePR({ number: 2, authorLogin: 'dependabot[bot]' }),
+      makePR({ number: 2, authorLogin: 'dependabot[bot]', isBot: true }),
     ]
     const result = evaluate({ pullRequests: prs })
     expect(result.evidence).toContain('botPRsExcluded: 1')

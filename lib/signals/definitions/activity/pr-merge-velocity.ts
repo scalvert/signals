@@ -20,7 +20,7 @@ export const prMergeVelocity: SignalDefinition = {
   applies: () => true,
 
   evaluate({ repo, pullRequests }) {
-    const humanPRs = pullRequests.filter((pr) => !isBot(pr.authorLogin))
+    const humanPRs = pullRequests.filter((pr) => !isBot(pr))
     const count = humanPRs.length
 
     if (count === 0) {

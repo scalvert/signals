@@ -32,7 +32,7 @@ export const stalePRs: SignalDefinition = {
   evaluate({ repo, pullRequests, existingSignals }) {
     const stalePRList = pullRequests.filter((pr) => {
       if (pr.isDraft) return false
-      if (isBot(pr.authorLogin)) return false
+      if (isBot(pr)) return false
       const threshold = pr.isExternal ? EXTERNAL_STALE_DAYS : INTERNAL_STALE_DAYS
       return pr.daysSinceUpdate >= threshold
     })

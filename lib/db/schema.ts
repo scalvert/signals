@@ -65,6 +65,7 @@ export const pullRequests = sqliteTable('pull_requests', {
   authorLogin: text('author_login').notNull(),
   authorAssociation: text('author_association').notNull(),
   repoFullName: text('repo_full_name').notNull(),
+  isBot: integer('is_bot', { mode: 'boolean' }).notNull().default(false),
   isDraft: integer('is_draft', { mode: 'boolean' }).notNull().default(false),
   ciState: text('ci_state').notNull().default('unknown'),
   createdAt: text('created_at').notNull(),
