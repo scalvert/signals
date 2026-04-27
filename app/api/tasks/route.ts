@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createTask, getTasks, getActiveTaskForSource } from '@/lib/db/queries'
+import type { TaskStatus } from '@/types/workspace'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -8,7 +9,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 })
   }
 
-  const status = url.searchParams.get('status') as 'pending' | 'dispatched' | 'completed' | 'verified' | 'failed' | null
+  const status = url.searchParams.get('status') as TaskStatus | null
   const repo = url.searchParams.get('repo') ?? undefined
   const tasks = getTasks(workspaceId, { status: status ?? undefined, repoFullName: repo })
   return NextResponse.json({ tasks })

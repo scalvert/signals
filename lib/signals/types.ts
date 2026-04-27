@@ -1,4 +1,5 @@
 import type { SignalSeverity, PullRequest, Repo, Signal } from '@/types/workspace'
+import type { Octokit } from 'octokit'
 
 export interface RepoSnapshot {
   name: string
@@ -23,10 +24,49 @@ export interface SignalDocs {
   url?: string
 }
 
-export interface SignalFixInfo {
-  description: string
-  provider?: 'claude-code' | 'cursor' | 'codex' | 'webhook'
+export interface AgentNeeds {
+  repoAccess: 'none' | 'read' | 'write'
+  github?: ('issues' | 'pulls' | 'comments')[]
 }
+
+export type ExpectedOutcome = 'pr-created' | 'pr-merged' | 'comment-posted' | 'issue-updated' | 'report'
+
+export interface FixActionContext {
+  repo: { owner: string; name: string; fullName: string }
+  metadata: Record<string, unknown>
+  octokit: InstanceType<typeof Octokit>
+}
+
+export interface FixResult {
+  success: boolean
+  resultRef?: string
+  statusLine?: string
+  error?: string
+}
+
+export type SignalFixInfo =
+  | { description: string }
+  | {
+      description: string
+      dispatch: 'auto'
+      action: (ctx: FixActionContext) => Promise<FixResult>
+    }
+  | {
+      description: string
+      dispatch: 'llm'
+      objective: string
+      prompt: string
+      needs: AgentNeeds
+      expectedOutcome: ExpectedOutcome
+    }
+  | {
+      description: string
+      dispatch: 'agent'
+      objective: string
+      prompt: string
+      needs: AgentNeeds
+      expectedOutcome: ExpectedOutcome
+    }
 
 export interface SignalMeta {
   id: string

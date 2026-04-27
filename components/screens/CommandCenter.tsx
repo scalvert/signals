@@ -10,10 +10,10 @@ import type { Repo, WorkspaceStats, TriageStatus, Task } from '@/types/workspace
 
 const taskStatusColors: Record<string, { bg: string; text: string }> = {
   pending: { bg: 'bg-muted', text: 'text-muted-foreground' },
-  dispatched: { bg: 'bg-[var(--health-b)]/10', text: 'text-[var(--health-b)]' },
+  active: { bg: 'bg-[var(--health-b)]/10', text: 'text-[var(--health-b)]' },
   completed: { bg: 'bg-[var(--health-a)]/10', text: 'text-[var(--health-a)]' },
-  verified: { bg: 'bg-[var(--health-a)]/20', text: 'text-[var(--health-a)]' },
   failed: { bg: 'bg-[var(--health-d)]/10', text: 'text-[var(--health-d)]' },
+  'needs-attention': { bg: 'bg-[var(--health-c)]/10', text: 'text-[var(--health-c)]' },
 }
 
 interface CommandCenterProps {
@@ -68,7 +68,7 @@ export function CommandCenter({ repos, stats, tasks, workspaceSlug }: CommandCen
         <StatCard
           label="Pending Tasks"
           value={tasks.filter((t) => t.status === 'pending').length}
-          sub={`${tasks.filter((t) => t.status === 'dispatched').length} in flight`}
+          sub={`${tasks.filter((t) => t.status === 'active').length} in flight`}
           icon={Hammer}
           color="bg-muted text-muted-foreground"
           href={`${base}/work`}

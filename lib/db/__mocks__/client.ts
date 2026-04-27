@@ -28,6 +28,9 @@ sqlite.exec(`
     provider TEXT,
     provider_ref TEXT,
     notes TEXT NOT NULL DEFAULT '[]',
+    dispatch_state TEXT,
+    result_ref TEXT,
+    status_line TEXT,
     created_at TEXT NOT NULL,
     dispatched_at TEXT,
     completed_at TEXT

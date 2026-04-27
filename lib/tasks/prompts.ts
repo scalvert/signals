@@ -1,5 +1,48 @@
 import type { Task } from '@/types/workspace'
 
+export function interpolatePrompt(
+  template: string,
+  vars: Record<string, unknown>,
+): string {
+  let result = template
+
+  result = result.replace(
+    /\{\{#each (\w+)\}\}([\s\S]*?)\{\{\/each\}\}/g,
+    (_match, key: string, body: string) => {
+      const arr = vars[key]
+      if (!Array.isArray(arr)) return ''
+      return arr
+        .map((item: Record<string, unknown>) => {
+          let line = body
+          line = line.replace(
+            /\{\{#if this\.(\w+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g,
+            (_m, field: string, truthy: string, falsy?: string) =>
+              item[field] ? truthy : (falsy ?? ''),
+          )
+          line = line.replace(
+            /\{\{this\.(\w+)\}\}/g,
+            (_m, field: string) => String(item[field] ?? ''),
+          )
+          return line
+        })
+        .join('')
+    },
+  )
+
+  result = result.replace(
+    /\{\{#if (\w+)\}\}([\s\S]*?)(?:\{\{else\}\}([\s\S]*?))?\{\{\/if\}\}/g,
+    (_match, key: string, truthy: string, falsy?: string) =>
+      vars[key] ? truthy : (falsy ?? ''),
+  )
+
+  result = result.replace(
+    /\{\{(\w+)\}\}/g,
+    (_match, key: string) => String(vars[key] ?? ''),
+  )
+
+  return result
+}
+
 export interface PromptSignalContext {
   rationale: string
   fixGuidance?: string

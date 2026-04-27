@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildPrompt } from './prompts'
+import { buildPrompt, interpolatePrompt } from './prompts'
 import type { Task } from '@/types/workspace'
 
 const mockTask: Task = {
@@ -13,6 +13,9 @@ const mockTask: Task = {
   status: 'pending',
   provider: null,
   providerRef: null,
+  dispatchState: null,
+  resultRef: null,
+  statusLine: null,
   createdAt: '2026-04-19T00:00:00Z',
   dispatchedAt: null,
   completedAt: null,
@@ -77,5 +80,79 @@ describe('buildPrompt', () => {
     const reasonIdx = prompt.indexOf('## Why this matters')
     const instructIdx = prompt.indexOf('## Instructions')
     expect(reasonIdx).toBeLessThan(instructIdx)
+  })
+})
+
+describe('interpolatePrompt', () => {
+  it('substitutes simple variables', () => {
+    const result = interpolatePrompt('Hello {{name}}, repo {{repo}}', {
+      name: 'Alice',
+      repo: 'org/foo',
+    })
+    expect(result).toBe('Hello Alice, repo org/foo')
+  })
+
+  it('leaves missing variables as empty strings', () => {
+    const result = interpolatePrompt('Hello {{name}}!', {})
+    expect(result).toBe('Hello !')
+  })
+
+  it('handles {{#each}} loops', () => {
+    const result = interpolatePrompt(
+      '{{#each items}}- {{this.label}}\n{{/each}}',
+      { items: [{ label: 'A' }, { label: 'B' }] },
+    )
+    expect(result).toBe('- A\n- B\n')
+  })
+
+  it('handles {{#if}} conditionals', () => {
+    const result = interpolatePrompt(
+      '{{#if showExtra}}bonus{{/if}}',
+      { showExtra: true },
+    )
+    expect(result).toBe('bonus')
+  })
+
+  it('handles {{#if}} with {{else}}', () => {
+    const result = interpolatePrompt(
+      '{{#if showExtra}}bonus{{else}}none{{/if}}',
+      { showExtra: false },
+    )
+    expect(result).toBe('none')
+  })
+
+  it('handles nested {{#if this.field}} inside {{#each}}', () => {
+    const result = interpolatePrompt(
+      '{{#each prs}}#{{this.number}} ({{#if this.isExternal}}external{{else}}internal{{/if}})\n{{/each}}',
+      { prs: [{ number: 1, isExternal: true }, { number: 2, isExternal: false }] },
+    )
+    expect(result).toBe('#1 (external)\n#2 (internal)\n')
+  })
+
+  it('returns empty for {{#each}} on missing key', () => {
+    const result = interpolatePrompt('before{{#each items}}X{{/each}}after', {})
+    expect(result).toBe('beforeafter')
+  })
+
+  it('handles the stale-prs prompt template shape', () => {
+    const template = [
+      'Maintainer of {{repoFullName}}.',
+      '',
+      '{{#each prs}}',
+      '- PR #{{this.number}} "{{this.title}}" by @{{this.author}} — {{this.daysSinceUpdate}} days ({{#if this.isExternal}}external{{else}}internal{{/if}})',
+      '{{/each}}',
+    ].join('\n')
+
+    const result = interpolatePrompt(template, {
+      repoFullName: 'org/repo',
+      prs: [
+        { number: 42, title: 'Add feature', author: 'bob', daysSinceUpdate: 30, isExternal: true },
+        { number: 99, title: 'Fix bug', author: 'alice', daysSinceUpdate: 14, isExternal: false },
+      ],
+    })
+
+    expect(result).toContain('Maintainer of org/repo.')
+    expect(result).toContain('PR #42 "Add feature" by @bob — 30 days (external)')
+    expect(result).toContain('PR #99 "Fix bug" by @alice — 14 days (internal)')
   })
 })

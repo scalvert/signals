@@ -221,11 +221,11 @@ describe('task query functions', () => {
         sourceId: 's-2',
       })
 
-      updateTaskStatus(t1.id, 'dispatched')
+      updateTaskStatus(t1.id, 'active')
 
-      const dispatched = getTasks(workspaceId, { status: 'dispatched' })
-      expect(dispatched).toHaveLength(1)
-      expect(dispatched[0].id).toBe(t1.id)
+      const active = getTasks(workspaceId, { status: 'active' })
+      expect(active).toHaveLength(1)
+      expect(active[0].id).toBe(t1.id)
 
       const pending = getTasks(workspaceId, { status: 'pending' })
       expect(pending).toHaveLength(1)
@@ -281,7 +281,7 @@ describe('task query functions', () => {
   })
 
   describe('updateTaskStatus', () => {
-    it('sets dispatchedAt when transitioning to dispatched', () => {
+    it('sets dispatchedAt when transitioning to active', () => {
       const task = createTask({
         workspaceId,
         repoFullName: 'org/repo',
@@ -292,11 +292,11 @@ describe('task query functions', () => {
       })
 
       const before = new Date().toISOString()
-      const updated = updateTaskStatus(task.id, 'dispatched')
+      const updated = updateTaskStatus(task.id, 'active')
       const after = new Date().toISOString()
 
       expect(updated).toBeDefined()
-      expect(updated!.status).toBe('dispatched')
+      expect(updated!.status).toBe('active')
       expect(updated!.dispatchedAt).not.toBeNull()
       expect(updated!.dispatchedAt! >= before).toBe(true)
       expect(updated!.dispatchedAt! <= after).toBe(true)
@@ -312,7 +312,7 @@ describe('task query functions', () => {
         sourceType: 'signal',
         sourceId: 's-1',
       })
-      updateTaskStatus(task.id, 'dispatched')
+      updateTaskStatus(task.id, 'active')
 
       const before = new Date().toISOString()
       const updated = updateTaskStatus(task.id, 'completed')
@@ -334,30 +334,12 @@ describe('task query functions', () => {
         sourceType: 'signal',
         sourceId: 's-1',
       })
-      updateTaskStatus(task.id, 'dispatched')
+      updateTaskStatus(task.id, 'active')
 
       const updated = updateTaskStatus(task.id, 'failed')
 
       expect(updated).toBeDefined()
       expect(updated!.status).toBe('failed')
-      expect(updated!.completedAt).not.toBeNull()
-    })
-
-    it('sets completedAt when transitioning to verified', () => {
-      const task = createTask({
-        workspaceId,
-        repoFullName: 'org/repo',
-        title: 'Task',
-        description: 'Desc',
-        sourceType: 'signal',
-        sourceId: 's-1',
-      })
-      updateTaskStatus(task.id, 'dispatched')
-
-      const updated = updateTaskStatus(task.id, 'verified')
-
-      expect(updated).toBeDefined()
-      expect(updated!.status).toBe('verified')
       expect(updated!.completedAt).not.toBeNull()
     })
 
@@ -371,7 +353,7 @@ describe('task query functions', () => {
         sourceId: 's-1',
       })
 
-      const updated = updateTaskStatus(task.id, 'dispatched', {
+      const updated = updateTaskStatus(task.id, 'active', {
         provider: 'github-actions',
         providerRef: 'run-12345',
       })
@@ -381,8 +363,45 @@ describe('task query functions', () => {
       expect(updated!.providerRef).toBe('run-12345')
     })
 
+    it('stores resultRef and statusLine', () => {
+      const task = createTask({
+        workspaceId,
+        repoFullName: 'org/repo',
+        title: 'Task',
+        description: 'Desc',
+        sourceType: 'signal',
+        sourceId: 's-1',
+      })
+
+      const updated = updateTaskStatus(task.id, 'completed', {
+        resultRef: 'https://github.com/org/repo/pull/42#issuecomment-123',
+        statusLine: 'Commented on 3 stale PRs',
+      })
+
+      expect(updated).toBeDefined()
+      expect(updated!.resultRef).toBe('https://github.com/org/repo/pull/42#issuecomment-123')
+      expect(updated!.statusLine).toBe('Commented on 3 stale PRs')
+    })
+
+    it('stores dispatchState as JSON', () => {
+      const task = createTask({
+        workspaceId,
+        repoFullName: 'org/repo',
+        title: 'Task',
+        description: 'Desc',
+        sourceType: 'signal',
+        sourceId: 's-1',
+      })
+
+      const state = { toolCalls: 3, commentUrls: ['url1', 'url2'] }
+      const updated = updateTaskStatus(task.id, 'completed', { dispatchState: state })
+
+      expect(updated).toBeDefined()
+      expect(updated!.dispatchState).toEqual(state)
+    })
+
     it('returns undefined for non-existent task', () => {
-      const result = updateTaskStatus(99999, 'dispatched')
+      const result = updateTaskStatus(99999, 'active')
       expect(result).toBeUndefined()
     })
   })

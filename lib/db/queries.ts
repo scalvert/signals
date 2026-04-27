@@ -380,6 +380,9 @@ function parseTaskRow(row: typeof tasks.$inferSelect): Task {
     status: row.status as TaskStatus,
     provider: row.provider ?? null,
     providerRef: row.providerRef ?? null,
+    dispatchState: row.dispatchState ? JSON.parse(row.dispatchState) as Record<string, unknown> : null,
+    resultRef: row.resultRef ?? null,
+    statusLine: row.statusLine ?? null,
     dispatchedAt: row.dispatchedAt ?? null,
     completedAt: row.completedAt ?? null,
     notes: JSON.parse(row.notes) as TaskNote[],
@@ -423,7 +426,7 @@ export function getActiveTaskForSource(
       (t) =>
         t.sourceType === sourceType &&
         t.sourceId === sourceId &&
-        t.status !== 'verified' &&
+        t.status !== 'completed' &&
         t.status !== 'failed',
     )
 }
@@ -479,14 +482,23 @@ export function createTask(data: {
 export function updateTaskStatus(
   taskId: number,
   status: TaskStatus,
-  updates?: { provider?: string; providerRef?: string },
+  updates?: {
+    provider?: string
+    providerRef?: string
+    resultRef?: string
+    statusLine?: string
+    dispatchState?: Record<string, unknown>
+  },
 ): Task | undefined {
   const now = new Date().toISOString()
   const set: Record<string, unknown> = { status }
-  if (status === 'dispatched') set.dispatchedAt = now
-  if (status === 'completed' || status === 'verified' || status === 'failed') set.completedAt = now
+  if (status === 'active') set.dispatchedAt = now
+  if (status === 'completed' || status === 'failed') set.completedAt = now
   if (updates?.provider) set.provider = updates.provider
   if (updates?.providerRef) set.providerRef = updates.providerRef
+  if (updates?.resultRef) set.resultRef = updates.resultRef
+  if (updates?.statusLine) set.statusLine = updates.statusLine
+  if (updates?.dispatchState) set.dispatchState = JSON.stringify(updates.dispatchState)
 
   const row = db
     .update(tasks)

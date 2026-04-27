@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Hammer, ExternalLink, Play } from 'lucide-react'
+import { Hammer, ExternalLink, Play, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { MultiSelectFilter } from '@/components/shared/MultiSelectFilter'
@@ -9,10 +9,10 @@ import type { Task, TaskStatus } from '@/types/workspace'
 
 const statusColors: Record<TaskStatus, { label: string; bg: string; text: string }> = {
   pending: { label: 'Pending', bg: 'bg-muted', text: 'text-muted-foreground' },
-  dispatched: { label: 'In Flight', bg: 'bg-[var(--health-b)]/10', text: 'text-[var(--health-b)]' },
+  active: { label: 'In Flight', bg: 'bg-[var(--health-b)]/10', text: 'text-[var(--health-b)]' },
   completed: { label: 'Completed', bg: 'bg-[var(--health-a)]/10', text: 'text-[var(--health-a)]' },
-  verified: { label: 'Verified', bg: 'bg-[var(--health-a)]/20', text: 'text-[var(--health-a)]' },
   failed: { label: 'Failed', bg: 'bg-[var(--health-d)]/10', text: 'text-[var(--health-d)]' },
+  'needs-attention': { label: 'Needs Attention', bg: 'bg-[var(--health-c)]/10', text: 'text-[var(--health-c)]' },
 }
 
 function StatusBadge({ status }: { status: TaskStatus }) {
@@ -31,25 +31,17 @@ function isStaleTask(completedAt: string): boolean {
   return daysSince > STALE_DAYS
 }
 
-async function handleDispatch(taskId: number, provider?: string) {
-  await fetch(`/api/tasks/${taskId}/dispatch`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ provider }),
-  })
-  window.location.reload()
-}
-
 export function Work({ tasks }: { tasks: Task[] }) {
   const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set())
   const [repoFilter, setRepoFilter] = useState<Set<string>>(new Set())
+  const [dispatchingId, setDispatchingId] = useState<number | null>(null)
 
   const statusOptions = useMemo(() => {
     const counts = new Map<string, number>()
     for (const t of tasks) {
       counts.set(t.status, (counts.get(t.status) ?? 0) + 1)
     }
-    return ['pending', 'dispatched', 'completed', 'verified', 'failed']
+    return ['pending', 'active', 'completed', 'failed', 'needs-attention']
       .filter((s) => counts.has(s))
       .map((value) => ({ value, count: counts.get(value) ?? 0 }))
   }, [tasks])
@@ -71,6 +63,19 @@ export function Work({ tasks }: { tasks: Task[] }) {
     if (repoFilter.size > 0) result = result.filter((t) => repoFilter.has(t.repoFullName.split('/')[0]))
     return result
   }, [tasks, statusFilter, repoFilter])
+
+  async function handleDispatch(taskId: number) {
+    setDispatchingId(taskId)
+    try {
+      await fetch(`/api/tasks/${taskId}/dispatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      window.location.reload()
+    } catch {
+      setDispatchingId(null)
+    }
+  }
 
   if (tasks.length === 0) {
     return (
@@ -100,8 +105,7 @@ export function Work({ tasks }: { tasks: Task[] }) {
               <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Task</th>
               <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Source</th>
               <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Provider</th>
-              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Ref</th>
+              <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Result</th>
               <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Created</th>
             </tr>
           </thead>
@@ -120,28 +124,35 @@ export function Work({ tasks }: { tasks: Task[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={task.status} />
-                    {task.status === 'pending' && (
-                      <button
-                        onClick={() => handleDispatch(task.id)}
-                        className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline transition-colors"
-                      >
-                        <Play className="w-3 h-3" />
-                        Dispatch
-                      </button>
-                    )}
-                    {task.status === 'completed' && task.completedAt && isStaleTask(task.completedAt) && (
-                      <span className="text-[10px] text-[var(--health-c)]">stale</span>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={task.status} />
+                      {task.status === 'pending' && (
+                        <button
+                          onClick={() => handleDispatch(task.id)}
+                          disabled={dispatchingId === task.id}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline transition-colors disabled:opacity-50"
+                        >
+                          {dispatchingId === task.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Play className="w-3 h-3" />
+                          )}
+                          {dispatchingId === task.id ? 'Dispatching…' : 'Dispatch'}
+                        </button>
+                      )}
+                      {task.status === 'completed' && task.completedAt && isStaleTask(task.completedAt) && (
+                        <span className="text-[10px] text-[var(--health-c)]">stale</span>
+                      )}
+                    </div>
+                    {task.statusLine && (
+                      <span className="text-[11px] text-muted-foreground">{task.statusLine}</span>
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-[12px] text-muted-foreground">
-                  {task.provider ?? '—'}
-                </td>
                 <td className="px-4 py-3">
-                  {task.providerRef ? (
-                    <a href={task.providerRef} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline flex items-center gap-1">
+                  {task.resultRef ? (
+                    <a href={task.resultRef} target="_blank" rel="noopener noreferrer" className="text-[11px] text-primary hover:underline flex items-center gap-1">
                       <ExternalLink className="w-3 h-3" />
                       View
                     </a>

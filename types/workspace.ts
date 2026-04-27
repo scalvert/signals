@@ -112,7 +112,7 @@ export interface RepoContext {
   updatedAt: string
 }
 
-export type TaskStatus = 'pending' | 'dispatched' | 'completed' | 'verified' | 'failed'
+export type TaskStatus = 'pending' | 'active' | 'completed' | 'failed' | 'needs-attention'
 
 export interface TaskNote {
   text: string
@@ -131,6 +131,9 @@ export interface Task {
   status: TaskStatus
   provider: string | null
   providerRef: string | null
+  dispatchState: Record<string, unknown> | null
+  resultRef: string | null
+  statusLine: string | null
   notes: TaskNote[]
   createdAt: string
   dispatchedAt: string | null

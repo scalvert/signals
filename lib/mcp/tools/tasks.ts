@@ -46,7 +46,7 @@ export const createTaskFromItem: MCPTool = {
       title: args.title as string,
       description: args.description as string,
     })
-    const updated = updateTaskStatus(task.id, 'dispatched', { provider: 'mcp-self-serve' })
+    const updated = updateTaskStatus(task.id, 'active', { provider: 'mcp-self-serve' })
     return json(updated)
   },
 }

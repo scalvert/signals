@@ -201,7 +201,7 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
       }
 
       if (verified) {
-        updateTaskStatus(task.id, 'verified')
+        updateTaskStatus(task.id, 'completed', { statusLine: 'Verified by sync — the originating issue is resolved' })
         addTaskNote(task.id, 'Verified by sync — the originating issue is resolved.', 'system')
       }
     }

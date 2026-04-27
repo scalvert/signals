@@ -30,7 +30,7 @@ export const getWorkspaceSummary: MCPTool = {
     const repos = getRepos(id)
     const activeSignals = getSignals(id, { status: 'active' })
     const pendingTasks = getTasks(id, { status: 'pending' })
-    const inFlightTasks = getTasks(id, { status: 'dispatched' })
+    const inFlightTasks = getTasks(id, { status: 'active' })
     return json({
       stats,
       topRepos: repos.sort((a, b) => b.score - a.score).slice(0, 5).map((r) => ({ name: r.fullName, score: r.score, grade: r.grade })),

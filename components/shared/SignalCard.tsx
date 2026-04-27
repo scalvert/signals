@@ -7,9 +7,10 @@ import type { Signal, Task } from '@/types/workspace'
 
 const taskStatusLabels: Record<string, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'text-muted-foreground border-border' },
-  dispatched: { label: 'Dispatched', className: 'text-[var(--health-b)] border-[var(--health-b)]/30 bg-[var(--health-b)]/8' },
+  active: { label: 'In Flight', className: 'text-[var(--health-b)] border-[var(--health-b)]/30 bg-[var(--health-b)]/8' },
   completed: { label: 'Completed', className: 'text-[var(--health-a)] border-[var(--health-a)]/30 bg-[var(--health-a)]/8' },
-  verified: { label: 'Verified', className: 'text-[var(--health-a)] border-[var(--health-a)]/30 bg-[var(--health-a)]/8' },
+  failed: { label: 'Failed', className: 'text-[var(--health-d)] border-[var(--health-d)]/30 bg-[var(--health-d)]/8' },
+  'needs-attention': { label: 'Needs Attention', className: 'text-[var(--health-c)] border-[var(--health-c)]/30 bg-[var(--health-c)]/8' },
 }
 
 const defaultConfig = { icon: AlertCircle, color: 'text-muted-foreground', bg: 'bg-muted/10' }

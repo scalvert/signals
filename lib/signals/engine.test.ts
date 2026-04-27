@@ -60,6 +60,7 @@ function makePR(overrides: Partial<PullRequest> = {}): PullRequest {
     authorLogin: 'contributor',
     authorAssociation: 'CONTRIBUTOR',
     repoFullName: 'org/test-repo',
+    isBot: false,
     isDraft: false,
     ciState: 'passing',
     createdAt: new Date().toISOString(),
@@ -241,7 +242,7 @@ describe('detectEvents', () => {
     const repo = makeRepo()
     const prs = [
       makePR({ number: 1, authorLogin: 'human', isExternal: true, daysSinceUpdate: 10 }),
-      makePR({ number: 2, authorLogin: 'dependabot[bot]', isExternal: true, daysSinceUpdate: 30 }),
+      makePR({ number: 2, authorLogin: 'dependabot[bot]', isBot: true, isExternal: true, daysSinceUpdate: 30 }),
     ]
     const signals = detectEvents(repo, undefined, prs, [])
     const stale = signals.find((s) => s.type === 'stale-prs')
@@ -252,7 +253,7 @@ describe('detectEvents', () => {
   it('detects stale bot PRs separately', () => {
     const repo = makeRepo()
     const prs = Array.from({ length: 6 }, (_, i) =>
-      makePR({ number: i + 1, authorLogin: 'dependabot[bot]' }),
+      makePR({ number: i + 1, authorLogin: 'dependabot[bot]', isBot: true, daysSinceUpdate: 30 }),
     )
     const signals = detectEvents(repo, undefined, prs, [])
     const botSignal = signals.find((s) => s.type === 'stale-bot-prs')
