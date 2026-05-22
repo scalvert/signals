@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { restoreSignal } from '@/lib/db/queries'
+import { getSignalById, restoreSignal } from '@/lib/db/queries'
+import { accessErrorResponse, requireWorkspaceAccess } from '@/lib/auth/access'
 
 export async function PATCH(
   _req: Request,
@@ -9,6 +10,20 @@ export async function PATCH(
   const signalId = Number(id)
   if (isNaN(signalId)) {
     return NextResponse.json({ error: 'Invalid signal ID' }, { status: 400 })
+  }
+
+  const signal = getSignalById(signalId)
+  if (!signal) {
+    return NextResponse.json({ error: 'Signal not found' }, { status: 404 })
+  }
+
+  try {
+    const access = await requireWorkspaceAccess(signal.workspaceId)
+    if (access.membership.role === 'viewer') {
+      return NextResponse.json({ error: 'Workspace role is not allowed' }, { status: 403 })
+    }
+  } catch (error) {
+    return accessErrorResponse(error)
   }
 
   const restored = restoreSignal(signalId)

@@ -34,13 +34,13 @@ export function WorkspaceShell({
   const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    if (!initialSyncStatus) {
+    if (!initialSyncStatus && workspace.githubInstallationId) {
       setSyncing(true)
       fetch(`/api/sync?slug=${workspace.slug}`, { method: 'POST' })
         .then(() => router.refresh())
         .finally(() => setSyncing(false))
     }
-  }, [initialSyncStatus, workspace.slug, router])
+  }, [initialSyncStatus, workspace.githubInstallationId, workspace.slug, router])
 
   async function handleSync() {
     setSyncing(true)

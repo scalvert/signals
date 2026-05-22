@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server'
-import { getOctokit } from '@/lib/github/client'
+import { accessErrorResponse, requireSession } from '@/lib/auth/access'
+import { getInstallationOctokit } from '@/lib/github/app'
+import { canUserAccessInstallation } from '@/lib/github/installations'
 
 export async function GET(req: Request) {
-  const url = new URL(req.url)
-  const query = (url.searchParams.get('q') ?? '').toLowerCase().trim()
-
-  if (!query) {
-    return NextResponse.json({ orgs: [], users: [], repos: [] })
-  }
-
   try {
-    const octokit = getOctokit()
+    const session = await requireSession()
+    const url = new URL(req.url)
+    const query = (url.searchParams.get('q') ?? '').toLowerCase().trim()
+    const installationId = Number(url.searchParams.get('installationId'))
+
+    if (!query) {
+      return NextResponse.json({ orgs: [], users: [], repos: [] })
+    }
+
+    if (!installationId) {
+      return NextResponse.json(
+        { error: 'installationId is required', orgs: [], users: [], repos: [] },
+        { status: 400 },
+      )
+    }
+
+    if (!(await canUserAccessInstallation(installationId, session.githubLogin))) {
+      return NextResponse.json(
+        { error: 'GitHub App installation access denied', orgs: [], users: [], repos: [] },
+        { status: 403 },
+      )
+    }
+
+    const octokit = getInstallationOctokit(installationId)
 
     const [orgUserResult, repoResult] = await Promise.all([
       octokit.rest.search.users({ q: `${query}`, per_page: 10 })
@@ -52,6 +70,11 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ orgs, users, repos })
   } catch (err) {
+    try {
+      return accessErrorResponse(err)
+    } catch {
+      // fall through
+    }
     const message = err instanceof Error ? err.message : String(err)
     console.error('[signals] GitHub search failed:', message)
     return NextResponse.json(

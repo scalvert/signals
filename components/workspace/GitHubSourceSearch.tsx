@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, Building2, User, GitBranch, Loader2 } from 'lucide-react'
+import { Search, GitBranch, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { WorkspaceSource } from '@/types/workspace'
 
@@ -20,9 +20,10 @@ interface FlatItem {
 interface GitHubSourceSearchProps {
   existingSources: WorkspaceSource[]
   onAdd: (source: WorkspaceSource) => void
+  installationId: number | null
 }
 
-export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearchProps) {
+export function GitHubSourceSearch({ existingSources, onAdd, installationId }: GitHubSourceSearchProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult | null>(null)
   const [open, setOpen] = useState(false)
@@ -33,7 +34,7 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
   const abortRef = useRef<AbortController | undefined>(undefined)
 
   useEffect(() => {
-    if (!query.trim()) {
+    if (!query.trim() || !installationId) {
       setResults(null)
       setOpen(false)
       setLoading(false)
@@ -49,7 +50,7 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
       const controller = new AbortController()
       abortRef.current = controller
 
-      fetch(`/api/github/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal })
+      fetch(`/api/github/search?q=${encodeURIComponent(query.trim())}&installationId=${installationId}`, { signal: controller.signal })
         .then((res) => {
           if (!res.ok) throw new Error('Search failed')
           return res.json()
@@ -73,7 +74,7 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
       clearTimeout(debounceRef.current)
       abortRef.current?.abort()
     }
-  }, [query])
+  }, [query, installationId])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -145,6 +146,7 @@ export function GitHubSourceSearch({ existingSources, onAdd }: GitHubSourceSearc
           onFocus={() => (results || loading) && setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search GitHub orgs, users, or repos..."
+          disabled={!installationId}
           spellCheck={false}
           autoComplete="off"
           className="h-9 w-full pl-8 pr-3 text-[13px] rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"

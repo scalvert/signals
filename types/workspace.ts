@@ -6,6 +6,39 @@ export interface User {
   createdAt: string
 }
 
+export type WorkspaceRole = 'owner' | 'member' | 'viewer'
+export type GitHubAccountType = 'Organization' | 'User'
+export type GitHubRepoPermission = 'none' | 'read' | 'triage' | 'write' | 'maintain' | 'admin'
+
+export interface WorkspaceMember {
+  id: number
+  workspaceId: number
+  userId: number
+  role: WorkspaceRole
+  joinedAt: string
+}
+
+export interface GitHubInstallation {
+  id: number
+  installationId: number
+  accountLogin: string
+  accountType: GitHubAccountType
+  repositorySelection: string
+  permissions: Record<string, string>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface RepoPermission {
+  id: number
+  workspaceId: number
+  userId: number
+  repoFullName: string
+  permission: GitHubRepoPermission
+  canDispatch: boolean
+  checkedAt: string
+}
+
 export type HealthGrade = 'A' | 'B' | 'C' | 'D' | 'F'
 export type TriageStatus = 'healthy' | 'watch' | 'critical'
 export type SignalSeverity = 'info' | 'warning' | 'critical'
@@ -143,6 +176,7 @@ export interface Task {
 export interface Workspace {
   id: number
   userId: number | null
+  githubInstallationId: number | null
   name: string
   slug: string
   sources: WorkspaceSource[]

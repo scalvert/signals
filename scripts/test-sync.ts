@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { getOctokit } from '../lib/github/client'
 import { USER_REPOS_QUERY, USER_PRS_QUERY } from '../lib/github/queries'
 

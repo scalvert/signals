@@ -1,4 +1,4 @@
-import { getOctokit } from './client'
+import { getOctokit, type GitHubClient } from './client'
 import { ORG_PRS_QUERY, USER_PRS_QUERY, SINGLE_REPO_PRS_QUERY } from './queries'
 import type { GitHubPRNode } from './types'
 import type { WorkspaceSource } from '@/types/workspace'
@@ -27,21 +27,21 @@ interface RawPullRequest {
 
 export async function fetchPRsForWorkspace(
   sources: WorkspaceSource[],
-  token?: string,
+  auth?: string | GitHubClient,
 ): Promise<RawPullRequest[]> {
   const prs: RawPullRequest[] = []
 
   for (const source of sources) {
     if (source.type === 'org') {
-      const orgPRs = await fetchOrgPRs(source.value, token)
+      const orgPRs = await fetchOrgPRs(source.value, auth)
       prs.push(...orgPRs)
     } else if (source.type === 'user') {
-      const userPRs = await fetchUserPRs(source.value, token)
+      const userPRs = await fetchUserPRs(source.value, auth)
       prs.push(...userPRs)
     } else {
       const [owner, name] = source.value.split('/')
       if (owner && name) {
-        const repoPRs = await fetchSingleRepoPRs(owner, name, token)
+        const repoPRs = await fetchSingleRepoPRs(owner, name, auth)
         prs.push(...repoPRs)
       }
     }
@@ -57,8 +57,12 @@ export async function fetchPRsForWorkspace(
   })
 }
 
-async function fetchOrgPRs(login: string, token?: string): Promise<RawPullRequest[]> {
-  const octokit = getOctokit(token)
+function resolveOctokit(auth?: string | GitHubClient): GitHubClient {
+  return typeof auth === 'object' && auth !== null ? auth : getOctokit(auth)
+}
+
+async function fetchOrgPRs(login: string, auth?: string | GitHubClient): Promise<RawPullRequest[]> {
+  const octokit = resolveOctokit(auth)
 
   const result = await octokit.graphql.paginate<{
     organization: {
@@ -81,8 +85,8 @@ async function fetchOrgPRs(login: string, token?: string): Promise<RawPullReques
   return prs
 }
 
-async function fetchUserPRs(login: string, token?: string): Promise<RawPullRequest[]> {
-  const octokit = getOctokit(token)
+async function fetchUserPRs(login: string, auth?: string | GitHubClient): Promise<RawPullRequest[]> {
+  const octokit = resolveOctokit(auth)
 
   const result = await octokit.graphql.paginate<{
     user: {
@@ -108,9 +112,9 @@ async function fetchUserPRs(login: string, token?: string): Promise<RawPullReque
 async function fetchSingleRepoPRs(
   owner: string,
   name: string,
-  token?: string,
+  auth?: string | GitHubClient,
 ): Promise<RawPullRequest[]> {
-  const octokit = getOctokit(token)
+  const octokit = resolveOctokit(auth)
 
   try {
     const result = await octokit.graphql<{

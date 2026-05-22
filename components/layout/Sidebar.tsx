@@ -6,9 +6,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard,
-  GitBranch,
   GitPullRequest,
-  Rss,
   BarChart3,
   Hammer,
   Settings,
@@ -30,9 +28,7 @@ interface SidebarProps {
 
 const navItems = [
   { path: '', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/repos', label: 'Repositories', icon: GitBranch },
   { path: '/prs', label: 'Pull Requests', icon: GitPullRequest },
-  { path: '/signals', label: 'Signal Feed', icon: Rss },
   { path: '/insights', label: 'Insights', icon: BarChart3 },
 ]
 
@@ -132,12 +128,10 @@ export function Sidebar({ workspace, allWorkspaces, currentUser, allUsers, works
         <div className="my-2 mx-3 border-t border-sidebar-border" />
 
         <Link
-          href={`${basePath}/work`}
+          href={`${basePath}?filter=tasks`}
           className={cn(
             'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-colors',
-            pathname.includes('/work')
-              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-              : 'text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-white',
+            'text-sidebar-foreground/65 hover:bg-sidebar-accent hover:text-white',
           )}
         >
           <Hammer className="w-4 h-4 shrink-0" />

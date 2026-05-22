@@ -14,12 +14,46 @@ export const users = sqliteTable('users', {
 export const workspaces = sqliteTable('workspaces', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id'),
+  githubInstallationId: integer('github_installation_id'),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   sources: text('sources').notNull(), // JSON array of WorkspaceSource
   excludedRepos: text('excluded_repos').notNull().default('[]'), // JSON array of fullName strings
   createdAt: text('created_at').notNull(),
 })
+
+export const githubInstallations = sqliteTable('github_installations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  installationId: integer('installation_id').notNull().unique(),
+  accountLogin: text('account_login').notNull(),
+  accountType: text('account_type').notNull(),
+  repositorySelection: text('repository_selection').notNull(),
+  permissions: text('permissions').notNull().default('{}'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+export const workspaceMembers = sqliteTable('workspace_members', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  userId: integer('user_id').notNull(),
+  role: text('role').notNull(),
+  joinedAt: text('joined_at').notNull(),
+}, (table) => [
+  uniqueIndex('workspace_members_workspace_user_idx').on(table.workspaceId, table.userId),
+])
+
+export const repoPermissions = sqliteTable('repo_permissions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  userId: integer('user_id').notNull(),
+  repoFullName: text('repo_full_name').notNull(),
+  permission: text('permission').notNull(),
+  canDispatch: integer('can_dispatch', { mode: 'boolean' }).notNull().default(false),
+  checkedAt: text('checked_at').notNull(),
+}, (table) => [
+  uniqueIndex('repo_permissions_workspace_user_repo_idx').on(table.workspaceId, table.userId, table.repoFullName),
+])
 
 export const repos = sqliteTable('repos', {
   id: integer('id').primaryKey({ autoIncrement: true }),

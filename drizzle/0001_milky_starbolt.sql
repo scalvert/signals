@@ -1,0 +1,1 @@
+ALTER TABLE `repos` ADD `check_results` text DEFAULT '{}' NOT NULL;

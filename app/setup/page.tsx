@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSetting, getWorkspaces } from '@/lib/db/queries'
+import { getSetting, getWorkspacesForUser } from '@/lib/db/queries'
 import { getAuth } from '@/lib/auth/config'
 import { SetupConnect } from './setup-connect'
 import { SignInButton } from './sign-in-button'
@@ -17,8 +17,12 @@ export default async function SetupPage() {
   const session = await auth()
 
   if (session?.user) {
+    if (!getSetting('github.app.privateKey')) {
+      return <SetupConnect />
+    }
+
     // Step 3: Authenticated — check workspaces
-    const workspaces = getWorkspaces()
+    const workspaces = getWorkspacesForUser(Number(session.user.id))
     if (workspaces.length > 0) {
       redirect(`/workspace/${workspaces[0].slug}`)
     }

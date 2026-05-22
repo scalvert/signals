@@ -28,6 +28,7 @@
 *.db
 *.db-shm
 *.db-wal
+!drizzle/*.sql
 
 # scaffold temp
 beacon-scaffold/

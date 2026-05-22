@@ -7,6 +7,8 @@ const ThrottledOctokit = Octokit.plugin(throttling, paginateGraphQL)
 
 const instances = new Map<string, InstanceType<typeof ThrottledOctokit>>()
 
+export type GitHubClient = InstanceType<typeof ThrottledOctokit>
+
 function resolveDefaultToken(): string {
   if (process.env.GITHUB_TOKEN) {
     return process.env.GITHUB_TOKEN

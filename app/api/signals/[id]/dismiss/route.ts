@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { dismissSignal, getRepoContext, upsertRepoContext } from '@/lib/db/queries'
-import { signals } from '@/lib/db/schema'
-import { db } from '@/lib/db/client'
-import { eq } from 'drizzle-orm'
+import { dismissSignal, getRepoContext, getSignalById, upsertRepoContext } from '@/lib/db/queries'
+import { accessErrorResponse, requireWorkspaceAccess } from '@/lib/auth/access'
 
 export async function PATCH(
   req: Request,
@@ -20,14 +18,19 @@ export async function PATCH(
     return NextResponse.json({ error: 'reason is required' }, { status: 400 })
   }
 
-  const signal = db
-    .select()
-    .from(signals)
-    .where(eq(signals.id, signalId))
-    .get()
+  const signal = getSignalById(signalId)
 
   if (!signal) {
     return NextResponse.json({ error: 'Signal not found' }, { status: 404 })
+  }
+
+  try {
+    const access = await requireWorkspaceAccess(signal.workspaceId)
+    if (access.membership.role === 'viewer') {
+      return NextResponse.json({ error: 'Workspace role is not allowed' }, { status: 403 })
+    }
+  } catch (error) {
+    return accessErrorResponse(error)
   }
 
   const dismissed = dismissSignal(signalId, reason)

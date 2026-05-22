@@ -19,10 +19,11 @@ interface SourceRepoSelectorProps {
   owner: string
   type: 'org' | 'user'
   selection: SourceRepoSelection
+  installationId: number | null
   onChange: (selection: SourceRepoSelection) => void
 }
 
-export function SourceRepoSelector({ owner, type, selection, onChange }: SourceRepoSelectorProps) {
+export function SourceRepoSelector({ owner, type, selection, installationId, onChange }: SourceRepoSelectorProps) {
   const [repos, setRepos] = useState<PickerRepo[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -30,13 +31,17 @@ export function SourceRepoSelector({ owner, type, selection, onChange }: SourceR
   const [forkFilter, setForkFilter] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    fetch(`/api/github/repos?owner=${encodeURIComponent(owner)}&type=${type}`)
+    if (!installationId) {
+      return
+    }
+
+    fetch(`/api/github/repos?owner=${encodeURIComponent(owner)}&type=${type}&installationId=${installationId}`)
       .then((r) => r.json())
       .then((data) => {
         setRepos(data.repos ?? [])
         setLoading(false)
       })
-  }, [owner, type])
+  }, [owner, type, installationId])
 
   const filteredRepos = useMemo(() => {
     let result = repos
@@ -123,6 +128,10 @@ export function SourceRepoSelector({ owner, type, selection, onChange }: SourceR
       .filter(([, count]) => count > 0)
       .map(([value, count]) => ({ value, count }))
   }, [repos])
+
+  if (!installationId) {
+    return <div className="p-3 text-[11px] text-muted-foreground">Select a GitHub App installation first.</div>
+  }
 
   if (loading) {
     return <div className="p-3 text-[11px] text-muted-foreground">Loading repos...</div>

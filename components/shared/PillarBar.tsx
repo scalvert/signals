@@ -1,12 +1,14 @@
 import { cn } from '@/lib/utils'
 
-export function PillarBar({ label, value }: { label: string; value: number }) {
+export function PillarBar({ label, value, max = 25 }: { label: string; value: number; max?: number }) {
   const getColor = (v: number) => {
-    if (v >= 19) return 'bg-[var(--health-a)]'
-    if (v >= 15) return 'bg-[var(--health-b)]'
-    if (v >= 11) return 'bg-[var(--health-c)]'
+    const ratio = max > 0 ? v / max : 0
+    if (ratio >= 0.76) return 'bg-[var(--health-a)]'
+    if (ratio >= 0.6) return 'bg-[var(--health-b)]'
+    if (ratio >= 0.44) return 'bg-[var(--health-c)]'
     return 'bg-[var(--health-d)]'
   }
+  const width = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0
 
   return (
     <div className="flex flex-col gap-1">
@@ -17,7 +19,7 @@ export function PillarBar({ label, value }: { label: string; value: number }) {
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
           className={cn('h-full rounded-full transition-all', getColor(value))}
-          style={{ width: `${(value / 25) * 100}%` }}
+          style={{ width: `${width}%` }}
         />
       </div>
     </div>

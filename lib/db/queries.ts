@@ -1,6 +1,19 @@
-import { eq, desc, sql } from 'drizzle-orm'
+import { and, eq, desc, sql } from 'drizzle-orm'
 import { db } from './client'
-import { workspaces, repos, pullRequests, signals, syncLog, repoContext, settings, scoreHistory, tasks } from './schema'
+import {
+  workspaces,
+  repos,
+  pullRequests,
+  signals,
+  syncLog,
+  repoContext,
+  settings,
+  scoreHistory,
+  tasks,
+  githubInstallations,
+  workspaceMembers,
+  repoPermissions,
+} from './schema'
 import type {
   Workspace,
   WorkspaceSource,
@@ -14,11 +27,39 @@ import type {
   Task,
   TaskStatus,
   TaskNote,
+  WorkspaceMember,
+  WorkspaceRole,
+  GitHubInstallation,
+  GitHubAccountType,
+  RepoPermission,
+  GitHubRepoPermission,
 } from '@/types/workspace'
 
 export function getWorkspaces(): Workspace[] {
   const rows = db.select().from(workspaces).all()
   return rows.map(parseWorkspaceRow)
+}
+
+export function getWorkspacesForUser(userId: number): Workspace[] {
+  const memberships = db
+    .select({ workspaceId: workspaceMembers.workspaceId })
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.userId, userId))
+    .all()
+  const memberWorkspaceIds = new Set(memberships.map((m) => m.workspaceId))
+
+  return getWorkspaces().filter((workspace) =>
+    memberWorkspaceIds.has(workspace.id) || workspace.userId === userId,
+  )
+}
+
+export function getWorkspaceById(id: number): Workspace | undefined {
+  const row = db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.id, id))
+    .get()
+  return row ? parseWorkspaceRow(row) : undefined
 }
 
 export function getWorkspaceBySlug(slug: string): Workspace | undefined {
@@ -35,6 +76,7 @@ export function createWorkspace(
   slug: string,
   sources: WorkspaceSource[],
   userId?: number,
+  githubInstallationId?: number | null,
 ): Workspace {
   const now = new Date().toISOString()
   const result = db
@@ -44,11 +86,16 @@ export function createWorkspace(
       slug,
       sources: JSON.stringify(sources),
       userId: userId ?? null,
+      githubInstallationId: githubInstallationId ?? null,
       createdAt: now,
     })
     .returning()
     .get()
-  return parseWorkspaceRow(result)
+  const workspace = parseWorkspaceRow(result)
+  if (userId) {
+    upsertWorkspaceMember(workspace.id, userId, 'owner')
+  }
+  return workspace
 }
 
 export function deleteWorkspace(id: number): void {
@@ -58,8 +105,39 @@ export function deleteWorkspace(id: number): void {
 function parseWorkspaceRow(row: typeof workspaces.$inferSelect): Workspace {
   return {
     ...row,
+    githubInstallationId: row.githubInstallationId ?? null,
     sources: JSON.parse(row.sources) as WorkspaceSource[],
     excludedRepos: JSON.parse(row.excludedRepos) as string[],
+  }
+}
+
+function parseGitHubInstallationRow(
+  row: typeof githubInstallations.$inferSelect,
+): GitHubInstallation {
+  const accountType =
+    row.accountType === 'User' ? 'User' : 'Organization'
+  return {
+    ...row,
+    accountType: accountType as GitHubAccountType,
+    permissions: JSON.parse(row.permissions) as Record<string, string>,
+  }
+}
+
+function parseWorkspaceMemberRow(
+  row: typeof workspaceMembers.$inferSelect,
+): WorkspaceMember {
+  return {
+    ...row,
+    role: row.role as WorkspaceRole,
+  }
+}
+
+function parseRepoPermissionRow(
+  row: typeof repoPermissions.$inferSelect,
+): RepoPermission {
+  return {
+    ...row,
+    permission: row.permission as GitHubRepoPermission,
   }
 }
 
@@ -71,6 +149,190 @@ export function updateWorkspaceExcludedRepos(
     .set({ excludedRepos: JSON.stringify(excludedRepos) })
     .where(eq(workspaces.id, id))
     .run()
+}
+
+export function updateWorkspaceInstallation(
+  id: number,
+  githubInstallationId: number | null,
+): void {
+  db.update(workspaces)
+    .set({ githubInstallationId })
+    .where(eq(workspaces.id, id))
+    .run()
+}
+
+export function upsertGitHubInstallation(data: {
+  installationId: number
+  accountLogin: string
+  accountType: GitHubAccountType
+  repositorySelection: string
+  permissions: Record<string, string>
+}): GitHubInstallation {
+  const now = new Date().toISOString()
+  const existing = db
+    .select()
+    .from(githubInstallations)
+    .where(eq(githubInstallations.installationId, data.installationId))
+    .get()
+
+  if (existing) {
+    const row = db
+      .update(githubInstallations)
+      .set({
+        accountLogin: data.accountLogin,
+        accountType: data.accountType,
+        repositorySelection: data.repositorySelection,
+        permissions: JSON.stringify(data.permissions),
+        updatedAt: now,
+      })
+      .where(eq(githubInstallations.id, existing.id))
+      .returning()
+      .get()
+    return parseGitHubInstallationRow(row)
+  }
+
+  const row = db
+    .insert(githubInstallations)
+    .values({
+      installationId: data.installationId,
+      accountLogin: data.accountLogin,
+      accountType: data.accountType,
+      repositorySelection: data.repositorySelection,
+      permissions: JSON.stringify(data.permissions),
+      createdAt: now,
+      updatedAt: now,
+    })
+    .returning()
+    .get()
+  return parseGitHubInstallationRow(row)
+}
+
+export function getGitHubInstallations(): GitHubInstallation[] {
+  return db
+    .select()
+    .from(githubInstallations)
+    .all()
+    .map(parseGitHubInstallationRow)
+}
+
+export function getGitHubInstallationByInstallationId(
+  installationId: number,
+): GitHubInstallation | undefined {
+  const row = db
+    .select()
+    .from(githubInstallations)
+    .where(eq(githubInstallations.installationId, installationId))
+    .get()
+  return row ? parseGitHubInstallationRow(row) : undefined
+}
+
+export function upsertWorkspaceMember(
+  workspaceId: number,
+  userId: number,
+  role: WorkspaceRole,
+): WorkspaceMember {
+  const now = new Date().toISOString()
+  const existing = getWorkspaceMember(workspaceId, userId)
+  if (existing) {
+    const row = db
+      .update(workspaceMembers)
+      .set({ role })
+      .where(eq(workspaceMembers.id, existing.id))
+      .returning()
+      .get()
+    return parseWorkspaceMemberRow(row)
+  }
+
+  const row = db
+    .insert(workspaceMembers)
+    .values({ workspaceId, userId, role, joinedAt: now })
+    .returning()
+    .get()
+  return parseWorkspaceMemberRow(row)
+}
+
+export function getWorkspaceMember(
+  workspaceId: number,
+  userId: number,
+): WorkspaceMember | undefined {
+  const row = db
+    .select()
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.userId, userId),
+      ),
+    )
+    .get()
+  return row ? parseWorkspaceMemberRow(row) : undefined
+}
+
+export function getWorkspaceMembers(workspaceId: number): WorkspaceMember[] {
+  return db
+    .select()
+    .from(workspaceMembers)
+    .where(eq(workspaceMembers.workspaceId, workspaceId))
+    .all()
+    .map(parseWorkspaceMemberRow)
+}
+
+export function upsertRepoPermission(data: {
+  workspaceId: number
+  userId: number
+  repoFullName: string
+  permission: GitHubRepoPermission
+  canDispatch: boolean
+  checkedAt?: string
+}): RepoPermission {
+  const checkedAt = data.checkedAt ?? new Date().toISOString()
+  const existing = getRepoPermission(data.workspaceId, data.userId, data.repoFullName)
+  if (existing) {
+    const row = db
+      .update(repoPermissions)
+      .set({
+        permission: data.permission,
+        canDispatch: data.canDispatch,
+        checkedAt,
+      })
+      .where(eq(repoPermissions.id, existing.id))
+      .returning()
+      .get()
+    return parseRepoPermissionRow(row)
+  }
+
+  const row = db
+    .insert(repoPermissions)
+    .values({
+      workspaceId: data.workspaceId,
+      userId: data.userId,
+      repoFullName: data.repoFullName,
+      permission: data.permission,
+      canDispatch: data.canDispatch,
+      checkedAt,
+    })
+    .returning()
+    .get()
+  return parseRepoPermissionRow(row)
+}
+
+export function getRepoPermission(
+  workspaceId: number,
+  userId: number,
+  repoFullName: string,
+): RepoPermission | undefined {
+  const row = db
+    .select()
+    .from(repoPermissions)
+    .where(
+      and(
+        eq(repoPermissions.workspaceId, workspaceId),
+        eq(repoPermissions.userId, userId),
+        eq(repoPermissions.repoFullName, repoFullName),
+      ),
+    )
+    .get()
+  return row ? parseRepoPermissionRow(row) : undefined
 }
 
 export function getRepos(workspaceId: number): Repo[] {
@@ -354,7 +616,7 @@ export function getScoreHistory(
   workspaceId: number,
   options?: { limit?: number; repoFullName?: string },
 ): ScoreSnapshot[] {
-  let query = db
+  const query = db
     .select()
     .from(scoreHistory)
     .where(eq(scoreHistory.workspaceId, workspaceId))
@@ -439,7 +701,7 @@ export function getTasks(
     .select()
     .from(tasks)
     .where(eq(tasks.workspaceId, workspaceId))
-    .orderBy(desc(tasks.createdAt))
+    .orderBy(desc(tasks.createdAt), desc(tasks.id))
     .all()
 
   return rows
@@ -456,6 +718,60 @@ export function getTask(taskId: number): Task | undefined {
     .get()
   if (!row) return undefined
   return parseTaskRow(row)
+}
+
+export interface RepoDashboardRow {
+  repo: Repo
+  signals: Signal[]
+  signalTasks: Record<string, Task>
+  recentTasks: Task[]
+  activeTaskCount: number
+  repoPermission: RepoPermission | null
+  canDispatch: boolean
+  permissionReason?: string
+}
+
+export function getRepoDashboardRows(workspaceId: number): RepoDashboardRow[] {
+  const repos = getRepos(workspaceId)
+  const signals = getSignals(workspaceId, { status: 'active' })
+  const allTasks = getTasks(workspaceId)
+  const signalTaskMap = getTasksBySource(workspaceId, 'signal')
+
+  const signalsByRepo = new Map<string, Signal[]>()
+  for (const signal of signals) {
+    const list = signalsByRepo.get(signal.repoFullName) ?? []
+    list.push(signal)
+    signalsByRepo.set(signal.repoFullName, list)
+  }
+
+  const tasksByRepo = new Map<string, Task[]>()
+  for (const task of allTasks) {
+    const list = tasksByRepo.get(task.repoFullName) ?? []
+    list.push(task)
+    tasksByRepo.set(task.repoFullName, list)
+  }
+
+  return repos.map((repo) => {
+    const repoSignals = signalsByRepo.get(repo.fullName) ?? []
+    const repoTasks = tasksByRepo.get(repo.fullName) ?? []
+
+    const signalTasks: Record<string, Task> = {}
+    for (const signal of repoSignals) {
+      const task = signalTaskMap.get(String(signal.id))
+      if (task) signalTasks[String(signal.id)] = task
+    }
+
+    return {
+      repo,
+      signals: repoSignals,
+      signalTasks,
+      recentTasks: repoTasks.slice(0, 5),
+      activeTaskCount: repoTasks.filter((t) => t.status === 'active').length,
+      repoPermission: null,
+      canDispatch: false,
+      permissionReason: 'Repository permission has not been checked for this user.',
+    }
+  })
 }
 
 export function createTask(data: {

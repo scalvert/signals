@@ -21,7 +21,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/scripts/migrate-runtime.mjs ./scripts/migrate-runtime.mjs
 COPY --from=builder /app/node_modules/drizzle-kit ./node_modules/drizzle-kit
+COPY --from=builder /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 USER nextjs
@@ -29,4 +31,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_URL=/app/data/signals.db
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "node scripts/migrate-runtime.mjs && node server.js"]

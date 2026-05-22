@@ -8,6 +8,7 @@ import type { WorkspaceSource, SourceRepoSelection } from '@/types/workspace'
 
 interface SourceCardProps {
   source: WorkspaceSource
+  installationId: number | null
   onRemove: () => void
   onChange: (source: WorkspaceSource) => void
 }
@@ -18,7 +19,7 @@ const defaultSelection: SourceRepoSelection = {
   visibility: 'all',
 }
 
-export function SourceCard({ source, onRemove, onChange }: SourceCardProps) {
+export function SourceCard({ source, installationId, onRemove, onChange }: SourceCardProps) {
   const [expanded, setExpanded] = useState(false)
   const [hasExpanded, setHasExpanded] = useState(false)
   const isExpandable = source.type === 'org' || source.type === 'user'
@@ -65,6 +66,7 @@ export function SourceCard({ source, onRemove, onChange }: SourceCardProps) {
             owner={source.value}
             type={source.type as 'org' | 'user'}
             selection={selection}
+            installationId={installationId}
             onChange={handleSelectionChange}
           />
         </div>

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getRepos } from '@/lib/db/queries'
+import { getRepos } from '@/lib/db/queries'
+import { requireWorkspaceAccessBySlug } from '@/lib/auth/access'
 import { SettingsView } from './settings-view'
 
 export default async function SettingsPage({
@@ -8,8 +9,9 @@ export default async function SettingsPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const workspace = getWorkspaceBySlug(slug)
-  if (!workspace) notFound()
+  const access = await requireWorkspaceAccessBySlug(slug).catch(() => null)
+  if (!access) notFound()
+  const { workspace, membership } = access
 
   const repos = getRepos(workspace.id)
   const allRepoNames = repos.map((r) => r.fullName).sort()
@@ -18,6 +20,7 @@ export default async function SettingsPage({
     <SettingsView
       workspace={workspace}
       allRepoNames={allRepoNames}
+      canEdit={membership.role === 'owner'}
     />
   )
 }

@@ -26,6 +26,9 @@ export async function GET(req: Request) {
     setSetting('github.app.clientId', data.client_id)
     setSetting('github.app.clientSecret', data.client_secret)
     setSetting('github.app.name', data.name)
+    if (data.slug) setSetting('github.app.slug', data.slug)
+    if (data.pem) setSetting('github.app.privateKey', data.pem)
+    if (data.webhook_secret) setSetting('github.app.webhookSecret', data.webhook_secret)
 
     console.info('[signals] GitHub App created:', data.name)
 

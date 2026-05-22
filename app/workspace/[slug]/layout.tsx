@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getWorkspaces, getLatestSync, getTasks } from '@/lib/db/queries'
+import { notFound, redirect } from 'next/navigation'
+import { getWorkspacesForUser, getLatestSync, getTasks } from '@/lib/db/queries'
 import { getAllUsers } from '@/lib/auth/users'
-import { getAuth } from '@/lib/auth/config'
+import { AccessError, requireWorkspaceAccessBySlug } from '@/lib/auth/access'
 import { WorkspaceShell } from './workspace-shell'
 
 export default async function WorkspaceLayout({
@@ -12,20 +12,22 @@ export default async function WorkspaceLayout({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const workspace = getWorkspaceBySlug(slug)
-  if (!workspace) notFound()
+  let access
+  try {
+    access = await requireWorkspaceAccessBySlug(slug)
+  } catch (error) {
+    if (error instanceof AccessError && error.status === 401) redirect('/setup')
+    notFound()
+  }
+  const { workspace, userId } = access
 
-  const allWorkspaces = getWorkspaces()
+  const allWorkspaces = getWorkspacesForUser(userId)
   const syncStatus = getLatestSync(workspace.id)
   const hasAiKey = !!process.env.ANTHROPIC_API_KEY
   const pendingTaskCount = getTasks(workspace.id, { status: 'pending' }).length
 
-  const { auth } = getAuth()
-  const session = await auth()
   const allUsers = getAllUsers()
-  const currentUser = session?.user?.githubLogin
-    ? allUsers.find((u) => u.githubLogin === session.user.githubLogin) ?? null
-    : null
+  const currentUser = allUsers.find((u) => u.id === userId) ?? null
 
   const workspaceCounts: Record<number, number> = {}
   for (const ws of allWorkspaces) {

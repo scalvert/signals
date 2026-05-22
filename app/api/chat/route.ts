@@ -6,6 +6,7 @@ import {
 } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { buildWorkspaceTools } from '@/lib/ai/tools'
+import { accessErrorResponse, requireWorkspaceAccess } from '@/lib/auth/access'
 
 export const maxDuration = 30
 
@@ -13,6 +14,12 @@ export async function POST(req: Request) {
   const body = await req.json()
   const messages: UIMessage[] = body.messages
   const workspaceId = Number(body.workspaceId ?? 0)
+
+  try {
+    await requireWorkspaceAccess(workspaceId)
+  } catch (error) {
+    return accessErrorResponse(error)
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return new Response(

@@ -7,6 +7,20 @@ import { Socket } from 'net'
 // Store transports by session ID for stateful connections
 const transports = new Map<string, StreamableHTTPServerTransport>()
 
+function isLocalRequest(req: Request): boolean {
+  const hostname = new URL(req.url).hostname
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]'
+}
+
+function remoteMcpDisabled(req: Request): Response | null {
+  if (process.env.SIGNALS_ALLOW_REMOTE_MCP === 'true') return null
+  if (isLocalRequest(req)) return null
+  return new Response(JSON.stringify({ error: 'MCP is only enabled for localhost by default' }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
 function createNodeRequest(req: Request): IncomingMessage {
   const url = new URL(req.url)
   const incoming = new IncomingMessage(new Socket())
@@ -106,10 +120,14 @@ async function handleMCP(req: Request): Promise<Response> {
 }
 
 export async function POST(req: Request) {
+  const denied = remoteMcpDisabled(req)
+  if (denied) return denied
   return handleMCP(req)
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = remoteMcpDisabled(req)
+  if (denied) return denied
   return new Response(JSON.stringify({
     name: 'signals',
     version: '0.1.0',

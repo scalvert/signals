@@ -1,6 +1,4 @@
-import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getRepos } from '@/lib/db/queries'
-import { Repositories } from '@/components/screens/Repositories'
+import { redirect } from 'next/navigation'
 
 export default async function ReposPage({
   params,
@@ -11,9 +9,6 @@ export default async function ReposPage({
 }) {
   const { slug } = await params
   const { repo } = await searchParams
-  const workspace = getWorkspaceBySlug(slug)
-  if (!workspace) notFound()
-
-  const repos = getRepos(workspace.id)
-  return <Repositories repos={repos} workspaceId={workspace.id} initialSelectedRepo={repo} />
+  const target = repo ? `/workspace/${slug}?expanded=${encodeURIComponent(repo)}` : `/workspace/${slug}`
+  redirect(target)
 }

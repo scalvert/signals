@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
 import { getRepos, getSignals, getDismissedChecks, getTasks, updateTaskStatus, addTaskNote } from '@/lib/db/queries'
-import { getUserToken } from '@/lib/auth/users'
+import { getInstallationOctokit } from '@/lib/github/app'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
 import { scoreRepo, runSignalDetection } from '@/lib/signals/engine'
@@ -40,6 +40,16 @@ export function filterReposBySourceSelection<T extends { name: string; fullName:
   return repos.filter((r) => included.has(r.fullName))
 }
 
+export function filterReposForWorkspace<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(
+  repos: T[],
+  sources: WorkspaceSource[],
+  excludedRepos: string[],
+): T[] {
+  const excluded = new Set(excludedRepos)
+  return filterReposBySourceSelection(repos, sources)
+    .filter((repo) => !excluded.has(repo.fullName))
+}
+
 export async function syncWorkspace(workspace: Workspace): Promise<{
   repoCount: number
   prCount: number
@@ -62,11 +72,15 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
     // Capture previous state for signal detection
     const previousRepos = getRepos(workspace.id)
 
+    if (!workspace.githubInstallationId) {
+      throw new Error('Workspace is not linked to a GitHub App installation')
+    }
+
     // Fetch data from GitHub (sequential to avoid concurrent pagination 502s)
-    const userToken = workspace.userId ? getUserToken(workspace.userId) ?? undefined : undefined
-    const allRepos = await fetchReposForWorkspace(workspace.sources, userToken)
-    const allPRs = await fetchPRsForWorkspace(workspace.sources, userToken)
-    const rawRepos = filterReposBySourceSelection(allRepos, workspace.sources)
+    const octokit = getInstallationOctokit(workspace.githubInstallationId)
+    const allRepos = await fetchReposForWorkspace(workspace.sources, octokit)
+    const allPRs = await fetchPRsForWorkspace(workspace.sources, octokit)
+    const rawRepos = filterReposForWorkspace(allRepos, workspace.sources, workspace.excludedRepos)
     const rawPRs = allPRs.filter((pr) => rawRepos.some((r) => r.fullName === pr.repoFullName))
 
     // Clear existing data for this workspace

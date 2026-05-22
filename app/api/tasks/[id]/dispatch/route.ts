@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
-import { getTask, getSignalById, updateTaskStatus } from '@/lib/db/queries'
-import { getAuth } from '@/lib/auth/config'
+import { getSignalById, updateTaskStatus } from '@/lib/db/queries'
+import { AccessError, accessErrorResponse, requireTaskAccess } from '@/lib/auth/access'
+import { getUserToken } from '@/lib/auth/users'
+import { refreshRepoPermission } from '@/lib/github/permissions'
 import { registry } from '@/lib/signals/registry'
 import '@/lib/signals/definitions'
 import { executeLlmDispatch } from '@/lib/tasks/executors/llm'
@@ -15,44 +17,55 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 })
   }
 
-  const task = getTask(taskId)
-  if (!task) {
-    return NextResponse.json({ error: 'Task not found' }, { status: 404 })
-  }
-
-  if (task.status !== 'pending') {
-    return NextResponse.json({ error: `Task is already ${task.status}` }, { status: 400 })
-  }
-
-  const { auth } = getAuth()
-  const session = await auth()
-  const token = session?.accessToken
-  if (!token) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
-  }
-
-  let signalType: string | undefined
-  if (task.sourceType === 'signal') {
-    const signal = getSignalById(Number(task.sourceId))
-    signalType = signal?.type
-  } else {
-    signalType = task.sourceId
-  }
-
-  if (!signalType) {
-    return NextResponse.json({ error: 'Could not resolve signal type' }, { status: 400 })
-  }
-
-  const definition = registry.get(signalType)
-  const fixInfo = definition?.meta.fixInfo
-
-  if (!fixInfo || !('dispatch' in fixInfo)) {
-    return NextResponse.json({ error: 'This signal does not support dispatch' }, { status: 400 })
-  }
-
-  updateTaskStatus(taskId, 'active')
-
   try {
+    const access = await requireTaskAccess(taskId)
+    const { task } = access
+
+    if (task.status !== 'pending') {
+      return NextResponse.json({ error: `Task is already ${task.status}` }, { status: 400 })
+    }
+
+    if (access.membership.role === 'viewer') {
+      return NextResponse.json({ error: 'Workspace role is not allowed' }, { status: 403 })
+    }
+
+    const permission = await refreshRepoPermission(
+      task.workspaceId,
+      access.userId,
+      access.githubLogin,
+      task.repoFullName,
+      { force: true },
+    )
+    if (!permission.canDispatch) {
+      return NextResponse.json({ error: 'Requires write access on GitHub' }, { status: 403 })
+    }
+
+    const token = getUserToken(access.userId)
+    if (!token) {
+      return NextResponse.json({ error: 'No GitHub token on record — please sign out and sign in again' }, { status: 401 })
+    }
+
+    let signalType: string | undefined
+    if (task.sourceType === 'signal') {
+      const signal = getSignalById(Number(task.sourceId))
+      signalType = signal?.type
+    } else {
+      signalType = task.sourceId
+    }
+
+    if (!signalType) {
+      return NextResponse.json({ error: 'Could not resolve signal type' }, { status: 400 })
+    }
+
+    const definition = registry.get(signalType)
+    const fixInfo = definition?.meta.fixInfo
+
+    if (!fixInfo || !('dispatch' in fixInfo)) {
+      return NextResponse.json({ error: 'This signal does not support dispatch' }, { status: 400 })
+    }
+
+    updateTaskStatus(taskId, 'active')
+
     if (fixInfo.dispatch === 'auto') {
       const [owner, name] = task.repoFullName.split('/')
       const { getOctokit } = await import('@/lib/github/client')
@@ -97,6 +110,7 @@ export async function POST(
 
     return NextResponse.json({ error: 'Unknown dispatch type' }, { status: 400 })
   } catch (error) {
+    if (error instanceof AccessError) return accessErrorResponse(error)
     const message = error instanceof Error ? error.message : String(error)
     updateTaskStatus(taskId, 'failed', { statusLine: `Failed: ${message.slice(0, 100)}` })
     return NextResponse.json({ error: message }, { status: 500 })

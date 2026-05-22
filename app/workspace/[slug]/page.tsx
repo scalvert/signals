@@ -1,24 +1,30 @@
 import { notFound } from 'next/navigation'
-import {
-  getWorkspaceBySlug,
-  getRepos,
-  getWorkspaceStats,
-  getTasks,
-} from '@/lib/db/queries'
-import { CommandCenter } from '@/components/screens/CommandCenter'
+import { getRepoDashboardRows } from '@/lib/db/queries'
+import { requireWorkspaceAccessBySlug } from '@/lib/auth/access'
+import { applyRepoPermissionsToDashboardRows } from '@/lib/github/permissions'
+import { InstallationRequired } from '@/components/workspace/InstallationRequired'
+import { Dashboard } from '@/components/screens/Dashboard'
 
-export default async function CommandCenterPage({
+export default async function DashboardPage({
   params,
 }: {
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const workspace = getWorkspaceBySlug(slug)
-  if (!workspace) notFound()
+  const access = await requireWorkspaceAccessBySlug(slug).catch(() => null)
+  if (!access) notFound()
+  const { workspace, userId, githubLogin } = access
 
-  const repos = getRepos(workspace.id)
-  const stats = getWorkspaceStats(workspace.id)
-  const tasks = getTasks(workspace.id)
+  if (!workspace.githubInstallationId) {
+    return <InstallationRequired workspace={workspace} />
+  }
 
-  return <CommandCenter repos={repos} stats={stats} tasks={tasks} workspaceSlug={slug} />
+  const rows = await applyRepoPermissionsToDashboardRows(
+    getRepoDashboardRows(workspace.id),
+    workspace.id,
+    userId,
+    githubLogin,
+  )
+
+  return <Dashboard rows={rows} workspaceId={workspace.id} />
 }

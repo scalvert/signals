@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck — generated shadcn/ui component; recharts v3 types diverge from v2 props
 'use client'
 

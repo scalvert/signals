@@ -1,11 +1,13 @@
 'use client'
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { X } from 'lucide-react'
 import { GitHubSourceSearch } from './GitHubSourceSearch'
 import { SourceCard } from './SourceCard'
-import type { Workspace, WorkspaceSource } from '@/types/workspace'
+import type { GitHubInstallation, Workspace, WorkspaceSource } from '@/types/workspace'
 
 interface WorkspaceDialogProps {
   open: boolean
@@ -19,6 +21,11 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
   const isEditing = !!workspace
   const [name, setName] = useState('')
   const [sources, setSources] = useState<WorkspaceSource[]>([])
+  const [installations, setInstallations] = useState<GitHubInstallation[]>([])
+  const [selectedInstallationId, setSelectedInstallationId] = useState<number | null>(null)
+  const [installUrl, setInstallUrl] = useState<string | null>(null)
+  const [setupUrl, setSetupUrl] = useState<string | null>(null)
+  const [loadingInstallations, setLoadingInstallations] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,7 +33,23 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
     if (open) {
       setName(workspace?.name ?? '')
       setSources(workspace?.sources ?? [])
+      setSelectedInstallationId(workspace?.githubInstallationId ?? null)
       setError(null)
+      setLoadingInstallations(true)
+      fetch('/api/github/installations')
+        .then((res) => res.json())
+        .then((data) => {
+          const nextInstallations = data.installations ?? []
+          setInstallations(nextInstallations)
+          setInstallUrl(data.installUrl ?? null)
+          setSetupUrl(data.setupUrl ?? null)
+          if (data.error) setError(data.error)
+          if (!workspace?.githubInstallationId && nextInstallations.length === 1) {
+            setSelectedInstallationId(nextInstallations[0].installationId)
+          }
+        })
+        .catch(() => setError('Failed to load GitHub App installations'))
+        .finally(() => setLoadingInstallations(false))
     }
   }, [open, workspace])
 
@@ -45,7 +68,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || sources.length === 0) return
+    if (!name.trim() || sources.length === 0 || !selectedInstallationId) return
 
     setSubmitting(true)
     setError(null)
@@ -55,7 +78,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
         const res = await fetch(`/api/workspaces/${workspace.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), sources }),
+          body: JSON.stringify({ name: name.trim(), sources, githubInstallationId: selectedInstallationId }),
         })
         if (!res.ok) {
           const data = await res.json()
@@ -71,7 +94,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
         const res = await fetch('/api/workspaces', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim(), sources }),
+          body: JSON.stringify({ name: name.trim(), sources, githubInstallationId: selectedInstallationId }),
         })
         if (!res.ok) {
           const data = await res.json()
@@ -128,13 +151,68 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
 
             <div>
               <label className="mb-1.5 block text-[13px] font-medium text-foreground">
+                GitHub App installation
+              </label>
+              {loadingInstallations ? (
+                <div className="text-[12px] text-muted-foreground">Loading installations...</div>
+              ) : installations.length > 0 ? (
+                <select
+                  value={selectedInstallationId ?? ''}
+                  onChange={(e) => setSelectedInstallationId(Number(e.target.value))}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="" disabled>Select an installation</option>
+                  {installations.map((installation) => (
+                    <option key={installation.installationId} value={installation.installationId}>
+                      {installation.accountLogin} ({installation.accountType})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-md border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
+                  No accessible GitHub App installations found.
+                  {setupUrl ? (
+                    <>
+                      {' '}
+                      <a
+                        href={setupUrl}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Reconnect the GitHub App
+                      </a>
+                      .
+                    </>
+                  ) : installUrl && (
+                    <>
+                      {' '}
+                      <a
+                        href={installUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Install the GitHub App
+                      </a>
+                      , then reopen this dialog.
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-foreground">
                 Sources
               </label>
               <p className="mb-3 text-[12px] text-muted-foreground">
                 Search for GitHub orgs, users, or repos to track.
               </p>
 
-              <GitHubSourceSearch existingSources={sources} onAdd={addSource} />
+              <GitHubSourceSearch
+                existingSources={sources}
+                installationId={selectedInstallationId}
+                onAdd={addSource}
+              />
             </div>
           </div>
 
@@ -145,6 +223,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
                   <SourceCard
                     key={`${source.type}-${source.value}`}
                     source={source}
+                    installationId={selectedInstallationId}
                     onRemove={() => removeSource(i)}
                     onChange={(updated) => updateSource(i, updated)}
                   />
@@ -170,7 +249,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
             )}
             <button
               type="submit"
-              disabled={!name.trim() || sources.length === 0 || submitting}
+              disabled={!name.trim() || sources.length === 0 || !selectedInstallationId || submitting}
               className="h-9 px-4 rounded-md bg-primary text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting

@@ -3,7 +3,7 @@
 > [!WARNING]
 > Signals is under active development and not yet feature-complete. Some screens are rough, some features are stubbed, and the data model may change. That said — contributions, feedback, and ideas are very welcome. If something catches your eye, open an issue or a PR.
 
-Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, dispatch fixes to coding agents, and query your repos with AI — across all your GitHub orgs and projects in one place.
+Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, dispatch fixes to coding agents, and query your repos with AI across shared GitHub org workspaces.
 
 ![Signals Dashboard](screenshots/01-dashboard.png)
 
@@ -22,7 +22,7 @@ Signals turns health checks and signal detection into actionable tasks you can d
 - **Task dispatch** — turn signals into tasks and dispatch them to Claude Code, Cursor, Codex, or a custom webhook. Signals detects the problem; your coding agent fixes it.
 - **AI chat** — ask questions about your repos using Claude with tool-calling against your live data
 - **MCP server** — expose your repo data to Claude Code, Cursor, and other AI tools via Streamable HTTP
-- **Workspace model** — group repos by org, by project, or mix-and-match across orgs
+- **Shared workspace model** — group repos by GitHub App installation, org, project, or selected repo set
 - **Repo filtering** — include/exclude specific repos per workspace
 
 ## Quick Start
@@ -37,12 +37,6 @@ Create a `.env` file:
 
 ```bash
 cp .env.example .env
-```
-
-Add your GitHub token (create one at https://github.com/settings/tokens with `repo` and `read:org` scopes):
-
-```
-GITHUB_TOKEN=ghp_...
 ```
 
 Optionally add an Anthropic API key for the AI chat panel:
@@ -60,9 +54,11 @@ npm run dev
 
 Visit http://localhost:3000 to create your first workspace.
 
+On first run, Signals creates a private GitHub App from a manifest. Install that app on the org or account you want to monitor, then create a workspace linked to that installation. Repository sync uses GitHub App installation tokens. Signed-in user OAuth tokens are used for identity and user-attributed actions such as dispatching PR comments.
+
 ## MCP Server
 
-Signals exposes an MCP server at `/api/mcp` that AI coding tools can connect to.
+Signals exposes an MCP server at `/api/mcp` that AI coding tools can connect to. It is localhost-only by default; set `SIGNALS_ALLOW_REMOTE_MCP=true` only for a trusted network deployment.
 
 ### Claude Code
 
@@ -92,7 +88,7 @@ Add to your `.claude/mcp.json`:
 
 ## Health Scoring
 
-Each repo is scored 0–100 across four pillars (25 points each):
+Each repo is scored 0–100 across active health pillars. Pillar point capacity is distributed across the checks that currently apply to a repository.
 
 | Pillar | Checks |
 |--------|--------|
@@ -138,10 +134,10 @@ export const myCheck: HealthCheck = {
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GITHUB_TOKEN` | — | GitHub personal access token (required) |
 | `ANTHROPIC_API_KEY` | — | Anthropic API key for AI chat (optional) |
 | `DATABASE_URL` | `./signals.db` | SQLite database path |
 | `SYNC_INTERVAL_MINUTES` | `15` | Auto-sync interval |
+| `SIGNALS_ALLOW_REMOTE_MCP` | `false` | Allow `/api/mcp` from non-localhost hosts |
 
 ## Tech Stack
 

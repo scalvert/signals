@@ -1,6 +1,4 @@
-import { notFound } from 'next/navigation'
-import { getWorkspaceBySlug, getTasks } from '@/lib/db/queries'
-import { Work } from '@/components/screens/Work'
+import { redirect } from 'next/navigation'
 
 export default async function WorkPage({
   params,
@@ -8,9 +6,5 @@ export default async function WorkPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const workspace = getWorkspaceBySlug(slug)
-  if (!workspace) notFound()
-
-  const tasks = getTasks(workspace.id)
-  return <Work tasks={tasks} />
+  redirect(`/workspace/${slug}?filter=tasks`)
 }

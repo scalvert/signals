@@ -10,9 +10,10 @@ import type { Workspace } from '@/types/workspace'
 interface SettingsViewProps {
   workspace: Workspace
   allRepoNames: string[]
+  canEdit: boolean
 }
 
-export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
+export function SettingsView({ workspace, allRepoNames, canEdit }: SettingsViewProps) {
   const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [excluded, setExcluded] = useState<Set<string>>(
@@ -27,16 +28,23 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
 
   async function handleSave() {
     setSaving(true)
-    await fetch(`/api/workspaces/${workspace.id}/excluded-repos`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ excludedRepos: [...excluded] }),
-    })
-    setSaving(false)
-    router.refresh()
+    try {
+      const saveRes = await fetch(`/api/workspaces/${workspace.id}/excluded-repos`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ excludedRepos: [...excluded] }),
+      })
+      if (saveRes.ok) {
+        await fetch(`/api/sync?slug=${workspace.slug}`, { method: 'POST' })
+      }
+      router.refresh()
+    } finally {
+      setSaving(false)
+    }
   }
 
   function toggleRepo(fullName: string) {
+    if (!canEdit) return
     setExcluded((prev) => {
       const next = new Set(prev)
       if (next.has(fullName)) next.delete(fullName)
@@ -62,6 +70,7 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
           </h3>
           <button
             onClick={() => setEditOpen(true)}
+            disabled={!canEdit}
             className="flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-medium rounded-md border border-border text-foreground hover:bg-muted transition-colors"
           >
             <Pencil className="w-3 h-3" />
@@ -106,7 +115,7 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
         </div>
         <p className="text-[12px] text-muted-foreground mb-3">
           Toggle repos to include or exclude them from this workspace.
-          Excluded repos won't appear in dashboards or health scoring.
+          Excluded repos will not appear in dashboards or health scoring.
         </p>
 
         <div className="relative mb-3">
@@ -128,9 +137,11 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
               <button
                 key={fullName}
                 onClick={() => toggleRepo(fullName)}
+                disabled={!canEdit}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors',
                   isExcluded && 'opacity-50',
+                  !canEdit && 'cursor-not-allowed',
                 )}
               >
                 {isExcluded ? (
@@ -169,13 +180,14 @@ export function SettingsView({ workspace, allRepoNames }: SettingsViewProps) {
             <div className="flex gap-2">
               <button
                 onClick={() => setExcluded(new Set(workspace.excludedRepos))}
+                disabled={!canEdit}
                 className="h-8 px-3 text-[12px] font-medium rounded-md border border-border text-foreground hover:bg-muted transition-colors"
               >
                 Reset
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={saving || !canEdit}
                 className="h-8 px-4 text-[12px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save & Re-sync'}

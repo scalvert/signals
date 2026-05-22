@@ -1,0 +1,1 @@
+ALTER TABLE `pull_requests` ADD `is_bot` integer DEFAULT false NOT NULL;

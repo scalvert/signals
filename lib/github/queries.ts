@@ -82,6 +82,7 @@ export const SINGLE_REPO_QUERY = `
       description
       url
       isPrivate
+      isFork
       primaryLanguage { name }
       stargazerCount
       forkCount
