@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
-import { users } from '@/lib/db/schema'
+import { repoPermissions, users } from '@/lib/db/schema'
+import type { Session } from 'next-auth'
 import type { User } from '@/types/workspace'
 
 interface UpsertUserData {
@@ -21,6 +22,7 @@ export function upsertUser(data: UpsertUserData): User {
     .get()
 
   if (existing) {
+    const tokenChanged = existing.accessToken !== data.accessToken
     db.update(users)
       .set({
         name: data.name,
@@ -31,6 +33,11 @@ export function upsertUser(data: UpsertUserData): User {
       })
       .where(eq(users.id, existing.id))
       .run()
+    if (tokenChanged) {
+      db.delete(repoPermissions)
+        .where(eq(repoPermissions.userId, existing.id))
+        .run()
+    }
     return {
       id: existing.id,
       githubLogin: data.githubLogin,
@@ -76,6 +83,38 @@ export function getAllUsers(): User[] {
     .all()
 }
 
+export function getUserById(userId: number): User | null {
+  const row = db
+    .select({
+      id: users.id,
+      githubLogin: users.githubLogin,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get()
+
+  return row ?? null
+}
+
+export function getUserByLogin(githubLogin: string): User | null {
+  const row = db
+    .select({
+      id: users.id,
+      githubLogin: users.githubLogin,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.githubLogin, githubLogin))
+    .get()
+
+  return row ?? null
+}
+
 export function getUserToken(userId: number): string | null {
   const row = db
     .select({ accessToken: users.accessToken })
@@ -83,4 +122,57 @@ export function getUserToken(userId: number): string | null {
     .where(eq(users.id, userId))
     .get()
   return row?.accessToken ?? null
+}
+
+export function ensureUserFromSession(session: Session): User | null {
+  if (session.error) return null
+
+  const githubLogin = session.user?.githubLogin
+  const accessToken = session.accessToken
+  if (!githubLogin || !accessToken) return null
+
+  const existingId = session.user?.id ? Number(session.user.id) : NaN
+  if (Number.isFinite(existingId)) {
+    const storedToken = getUserToken(existingId)
+    if (storedToken) {
+      if (storedToken !== accessToken) {
+        return upsertUser({
+          githubLogin,
+          name: session.user.name ?? githubLogin,
+          avatarUrl: session.user.avatarUrl ?? session.user.image ?? '',
+          accessToken,
+          refreshToken: null,
+          tokenExpiresAt: null,
+        })
+      }
+      return getUserById(existingId)
+    }
+  }
+
+  const existing = getUserByLogin(githubLogin)
+  if (existing) {
+    const storedToken = getUserToken(existing.id)
+    if (storedToken) {
+      if (storedToken !== accessToken) {
+        return upsertUser({
+          githubLogin,
+          name: session.user.name ?? githubLogin,
+          avatarUrl: session.user.avatarUrl ?? session.user.image ?? '',
+          accessToken,
+          refreshToken: null,
+          tokenExpiresAt: null,
+        })
+      }
+      return existing
+    }
+  }
+
+  return upsertUser({
+    githubLogin,
+    name: session.user.name ?? githubLogin,
+    avatarUrl: session.user.avatarUrl ?? session.user.image ?? '',
+    accessToken,
+    refreshToken: null,
+    tokenExpiresAt: null,
+  })
 }

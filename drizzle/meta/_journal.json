@@ -99,6 +99,13 @@
       "when": 1778172711114,
       "tag": "0013_mighty_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1779665484505,
+      "tag": "0014_windy_strong_guy",
+      "breakpoints": true
     }
   ]
 }

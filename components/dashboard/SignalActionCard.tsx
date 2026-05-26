@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ExternalLink, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ExternalLink, Loader2, AlertTriangle, CheckCircle2, Rocket } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   getSignalVisual,
   severityBorder,
   severityBg,
 } from '@/lib/signals/icons'
-import type { Signal, Task } from '@/types/workspace'
+import type { DispatchTarget, Signal, Task } from '@/types/workspace'
 
 const RESOLVED_STATUSES = new Set(['completed', 'failed', 'needs-attention'])
 const POLL_INTERVAL_MS = 2000
@@ -19,6 +19,7 @@ interface Props {
   workspaceId: number
   canDispatch: boolean
   permissionReason?: string
+  dispatchTarget?: DispatchTarget
   onChange?: () => void
 }
 
@@ -28,6 +29,7 @@ export function SignalActionCard({
   workspaceId,
   canDispatch,
   permissionReason,
+  dispatchTarget,
   onChange,
 }: Props) {
   const visual = getSignalVisual(signal.type)
@@ -40,11 +42,21 @@ export function SignalActionCard({
   const [error, setError] = useState<string | null>(null)
   const [showDismissForm, setShowDismissForm] = useState(false)
   const [dismissReason, setDismissReason] = useState('')
+  const [selectedRunner, setSelectedRunner] = useState(
+    dispatchTarget?.config.defaultRunner ?? 'codex',
+  )
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    if (dispatchTarget?.config.defaultRunner) {
+      setSelectedRunner(dispatchTarget.config.defaultRunner)
+    }
+  }, [dispatchTarget?.config.defaultRunner])
+
+  useEffect(() => {
     if (!task) return
+    if (task.status !== 'active') return
     if (RESOLVED_STATUSES.has(task.status)) return
     if (pollingRef.current) return
 
@@ -105,9 +117,15 @@ export function SignalActionCard({
       }
 
       if (!activeTask) throw new Error('Could not create task')
+      setTask(activeTask)
 
+      const payload = dispatchTarget?.enabled
+        ? JSON.stringify({ runner: selectedRunner })
+        : undefined
       const dispatchRes = await fetch(`/api/tasks/${activeTask.id}/dispatch`, {
         method: 'POST',
+        headers: payload ? { 'Content-Type': 'application/json' } : undefined,
+        body: payload,
       })
       if (!dispatchRes.ok) {
         const body = await dispatchRes.json().catch(() => ({}))
@@ -134,9 +152,18 @@ export function SignalActionCard({
     onChange?.()
   }
 
-  const isInFlight = task && !RESOLVED_STATUSES.has(task.status)
+  const isPending = task?.status === 'pending'
+  const isInFlight = task?.status === 'active'
   const isCompleted = task?.status === 'completed'
   const isFailed = task?.status === 'failed' || task?.status === 'needs-attention'
+  const dispatchState = task?.dispatchState as {
+    orchestrator?: string
+    runner?: string
+    executedByIdentity?: string
+    externalId?: string
+  } | null | undefined
+  const runners = dispatchTarget?.enabled ? dispatchTarget.config.allowedRunners : []
+  const showRunnerSelector = runners.length > 0
 
   return (
     <div
@@ -174,6 +201,11 @@ export function SignalActionCard({
               {task?.statusLine ?? 'Dispatching…'}
             </span>
           )}
+          {isPending && !working && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              Ready to dispatch
+            </span>
+          )}
           {isCompleted && (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--health-a)]">
               <CheckCircle2 className="w-3 h-3" />
@@ -197,22 +229,43 @@ export function SignalActionCard({
               View
             </a>
           )}
-          {!task && signal.fixable && !canDispatch && (
+          {dispatchState?.runner && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Rocket className="w-3 h-3" />
+              {dispatchState.runner}
+              {dispatchState.executedByIdentity ? ` as ${dispatchState.executedByIdentity}` : ''}
+            </span>
+          )}
+          {(!task || isPending) && signal.fixable && !canDispatch && (
             <span className="text-[11px] text-muted-foreground">
               {permissionReason ?? 'Dispatch unavailable'}
             </span>
           )}
-          {!task && signal.fixable && canDispatch && !confirming && !working && (
+          {(!task || isPending) && signal.fixable && canDispatch && !confirming && !working && (
             <button
               onClick={() => setConfirming(true)}
               className="text-[11px] font-medium text-primary hover:underline"
             >
-              Fix this
+              Dispatch
             </button>
           )}
           {confirming && (
-            <div className="inline-flex items-center gap-2 text-[11px]">
+            <div className="inline-flex items-center gap-2 text-[11px] flex-wrap">
               <span className="text-muted-foreground">Run dispatch?</span>
+              {showRunnerSelector && (
+                <select
+                  value={selectedRunner}
+                  onChange={(e) => setSelectedRunner(e.target.value)}
+                  className="h-6 rounded border border-border bg-background px-1.5 text-[11px] text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  aria-label="Agent runner"
+                >
+                  {runners.map((runner) => (
+                    <option key={runner} value={runner}>
+                      {runner}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 onClick={handleDispatch}
                 className="font-medium text-primary hover:underline"

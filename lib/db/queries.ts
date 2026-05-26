@@ -13,6 +13,8 @@ import {
   githubInstallations,
   workspaceMembers,
   repoPermissions,
+  dispatchTargets,
+  taskRuns,
 } from './schema'
 import type {
   Workspace,
@@ -33,6 +35,13 @@ import type {
   GitHubAccountType,
   RepoPermission,
   GitHubRepoPermission,
+  DispatchTarget,
+  DispatchTargetType,
+  AgentOrchestratorConfig,
+  TaskRun,
+  TaskRunStatus,
+  ExecutionOrchestrator,
+  AgentRunner,
 } from '@/types/workspace'
 
 export function getWorkspaces(): Workspace[] {
@@ -139,6 +148,142 @@ function parseRepoPermissionRow(
     ...row,
     permission: row.permission as GitHubRepoPermission,
   }
+}
+
+function normalizeAgentOrchestratorConfig(
+  value: unknown,
+): AgentOrchestratorConfig {
+  const config = typeof value === 'object' && value !== null
+    ? value as Partial<AgentOrchestratorConfig>
+    : {}
+  const configuredRunners = Array.isArray(config.allowedRunners) && config.allowedRunners.length > 0
+    ? config.allowedRunners.map(String).map((runner) => runner.trim()).filter(Boolean)
+    : ['codex', 'claude-code', 'cursor', 'opencode']
+  const allowedRunners = configuredRunners.length > 0
+    ? configuredRunners
+    : ['codex', 'claude-code', 'cursor', 'opencode']
+  const defaultRunner = typeof config.defaultRunner === 'string' && config.defaultRunner.trim()
+    ? config.defaultRunner.trim()
+    : allowedRunners[0]
+
+  return {
+    aoCommand: typeof config.aoCommand === 'string' && config.aoCommand.trim()
+      ? config.aoCommand.trim()
+      : 'ao',
+    aoCwd: typeof config.aoCwd === 'string' ? config.aoCwd.trim() : '',
+    projectId: typeof config.projectId === 'string' ? config.projectId.trim() : '',
+    dashboardUrl: typeof config.dashboardUrl === 'string' && config.dashboardUrl.trim()
+      ? config.dashboardUrl.trim()
+      : null,
+    defaultRunner: allowedRunners.includes(defaultRunner)
+      ? defaultRunner
+      : allowedRunners[0],
+    allowedRunners,
+    runnerIdentity: typeof config.runnerIdentity === 'string' && config.runnerIdentity.trim()
+      ? config.runnerIdentity.trim()
+      : 'local runner identity',
+  }
+}
+
+function parseDispatchTargetRow(
+  row: typeof dispatchTargets.$inferSelect,
+): DispatchTarget {
+  return {
+    ...row,
+    type: row.type as DispatchTargetType,
+    config: normalizeAgentOrchestratorConfig(JSON.parse(row.config)),
+  }
+}
+
+function parseTaskRunRow(row: typeof taskRuns.$inferSelect): TaskRun {
+  return {
+    ...row,
+    dispatchTargetId: row.dispatchTargetId ?? null,
+    orchestrator: row.orchestrator as ExecutionOrchestrator,
+    runner: row.runner as AgentRunner,
+    status: row.status as TaskRunStatus,
+    externalId: row.externalId ?? null,
+    externalUrl: row.externalUrl ?? null,
+    branch: row.branch ?? null,
+    prUrl: row.prUrl ?? null,
+    summary: row.summary ?? null,
+    error: row.error ?? null,
+    rawState: row.rawState ? JSON.parse(row.rawState) as Record<string, unknown> : null,
+    completedAt: row.completedAt ?? null,
+  }
+}
+
+export function getDispatchTargets(workspaceId: number): DispatchTarget[] {
+  return db
+    .select()
+    .from(dispatchTargets)
+    .where(eq(dispatchTargets.workspaceId, workspaceId))
+    .all()
+    .map(parseDispatchTargetRow)
+}
+
+export function getDispatchTargetById(id: number): DispatchTarget | undefined {
+  const row = db
+    .select()
+    .from(dispatchTargets)
+    .where(eq(dispatchTargets.id, id))
+    .get()
+  return row ? parseDispatchTargetRow(row) : undefined
+}
+
+export function getDispatchTargetForWorkspace(
+  workspaceId: number,
+  type: DispatchTargetType,
+): DispatchTarget | undefined {
+  const row = db
+    .select()
+    .from(dispatchTargets)
+    .where(
+      and(
+        eq(dispatchTargets.workspaceId, workspaceId),
+        eq(dispatchTargets.type, type),
+      ),
+    )
+    .get()
+  return row ? parseDispatchTargetRow(row) : undefined
+}
+
+export function upsertAgentOrchestratorDispatchTarget(data: {
+  workspaceId: number
+  name?: string
+  enabled: boolean
+  config: AgentOrchestratorConfig
+}): DispatchTarget {
+  const now = new Date().toISOString()
+  const existing = getDispatchTargetForWorkspace(data.workspaceId, 'agent-orchestrator')
+  const values = {
+    type: 'agent-orchestrator',
+    name: data.name?.trim() || 'Agent Orchestrator',
+    enabled: data.enabled,
+    config: JSON.stringify(normalizeAgentOrchestratorConfig(data.config)),
+    updatedAt: now,
+  }
+
+  if (existing) {
+    const row = db
+      .update(dispatchTargets)
+      .set(values)
+      .where(eq(dispatchTargets.id, existing.id))
+      .returning()
+      .get()
+    return parseDispatchTargetRow(row)
+  }
+
+  const row = db
+    .insert(dispatchTargets)
+    .values({
+      workspaceId: data.workspaceId,
+      ...values,
+      createdAt: now,
+    })
+    .returning()
+    .get()
+  return parseDispatchTargetRow(row)
 }
 
 export function updateWorkspaceExcludedRepos(
@@ -824,6 +969,134 @@ export function updateTaskStatus(
     .get()
   if (!row) return undefined
   return parseTaskRow(row)
+}
+
+export function updateTaskSummary(
+  taskId: number,
+  updates: {
+    status?: TaskStatus
+    provider?: string | null
+    providerRef?: string | null
+    resultRef?: string | null
+    statusLine?: string | null
+    dispatchState?: Record<string, unknown> | null
+    completedAt?: string | null
+  },
+): Task | undefined {
+  const set: Record<string, unknown> = {}
+  if (updates.status) set.status = updates.status
+  if (updates.provider !== undefined) set.provider = updates.provider
+  if (updates.providerRef !== undefined) set.providerRef = updates.providerRef
+  if (updates.resultRef !== undefined) set.resultRef = updates.resultRef
+  if (updates.statusLine !== undefined) set.statusLine = updates.statusLine
+  if (updates.dispatchState !== undefined) {
+    set.dispatchState = updates.dispatchState ? JSON.stringify(updates.dispatchState) : null
+  }
+  if (updates.completedAt !== undefined) set.completedAt = updates.completedAt
+
+  const row = db
+    .update(tasks)
+    .set(set)
+    .where(eq(tasks.id, taskId))
+    .returning()
+    .get()
+  if (!row) return undefined
+  return parseTaskRow(row)
+}
+
+export function createTaskRun(data: {
+  taskId: number
+  workspaceId: number
+  dispatchTargetId: number | null
+  orchestrator: ExecutionOrchestrator
+  runner: AgentRunner
+  status: TaskRunStatus
+  externalId?: string | null
+  externalUrl?: string | null
+  branch?: string | null
+  prUrl?: string | null
+  summary?: string | null
+  error?: string | null
+  rawState?: Record<string, unknown> | null
+  dispatchedByUserId: number
+  executedByIdentity: string
+}): TaskRun {
+  const now = new Date().toISOString()
+  const row = db
+    .insert(taskRuns)
+    .values({
+      ...data,
+      externalId: data.externalId ?? null,
+      externalUrl: data.externalUrl ?? null,
+      branch: data.branch ?? null,
+      prUrl: data.prUrl ?? null,
+      summary: data.summary ?? null,
+      error: data.error ?? null,
+      rawState: data.rawState ? JSON.stringify(data.rawState) : null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    })
+    .returning()
+    .get()
+  return parseTaskRunRow(row)
+}
+
+export function getTaskRuns(taskId: number): TaskRun[] {
+  return db
+    .select()
+    .from(taskRuns)
+    .where(eq(taskRuns.taskId, taskId))
+    .orderBy(desc(taskRuns.createdAt), desc(taskRuns.id))
+    .all()
+    .map(parseTaskRunRow)
+}
+
+export function getLatestTaskRun(taskId: number): TaskRun | undefined {
+  const row = db
+    .select()
+    .from(taskRuns)
+    .where(eq(taskRuns.taskId, taskId))
+    .orderBy(desc(taskRuns.createdAt), desc(taskRuns.id))
+    .limit(1)
+    .get()
+  return row ? parseTaskRunRow(row) : undefined
+}
+
+export function updateTaskRun(
+  runId: number,
+  updates: {
+    status?: TaskRunStatus
+    externalId?: string | null
+    externalUrl?: string | null
+    branch?: string | null
+    prUrl?: string | null
+    summary?: string | null
+    error?: string | null
+    rawState?: Record<string, unknown> | null
+    completedAt?: string | null
+  },
+): TaskRun | undefined {
+  const set: Record<string, unknown> = { updatedAt: new Date().toISOString() }
+  if (updates.status) set.status = updates.status
+  if (updates.externalId !== undefined) set.externalId = updates.externalId
+  if (updates.externalUrl !== undefined) set.externalUrl = updates.externalUrl
+  if (updates.branch !== undefined) set.branch = updates.branch
+  if (updates.prUrl !== undefined) set.prUrl = updates.prUrl
+  if (updates.summary !== undefined) set.summary = updates.summary
+  if (updates.error !== undefined) set.error = updates.error
+  if (updates.rawState !== undefined) {
+    set.rawState = updates.rawState ? JSON.stringify(updates.rawState) : null
+  }
+  if (updates.completedAt !== undefined) set.completedAt = updates.completedAt
+
+  const row = db
+    .update(taskRuns)
+    .set(set)
+    .where(eq(taskRuns.id, runId))
+    .returning()
+    .get()
+  return row ? parseTaskRunRow(row) : undefined
 }
 
 export function addTaskNote(

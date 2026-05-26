@@ -15,6 +15,8 @@ export function SetupConnect() {
       hook_attributes: { url: 'https://example.com/no-op' },
       redirect_url: `${origin}/api/github/setup-callback`,
       callback_urls: [`${origin}/api/auth/callback/github`],
+      setup_url: `${origin}/setup`,
+      setup_on_update: true,
       public: false,
       default_permissions: {
         contents: 'read',

@@ -32,13 +32,13 @@ function getAppCredentials() {
 
 function createAppOctokit(installationId?: number): InstanceType<typeof AppOctokit> {
   const { appId, privateKey } = getAppCredentials()
+  const auth = installationId
+    ? { appId, privateKey, installationId }
+    : { appId, privateKey }
+
   return new AppOctokit({
     authStrategy: createAppAuth,
-    auth: {
-      appId,
-      privateKey,
-      installationId,
-    },
+    auth,
     userAgent: 'signals/0.1.0',
     throttle: {
       onRateLimit: (retryAfter, options, _octokit, retryCount) => {
@@ -76,4 +76,3 @@ export function getInstallationOctokit(installationId: number): GitHubClient {
   installationInstances.set(installationId, octokit)
   return octokit as unknown as GitHubClient
 }
-

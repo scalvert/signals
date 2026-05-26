@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { X } from 'lucide-react'
+import { ExternalLink, RefreshCcw, X } from 'lucide-react'
 import { GitHubSourceSearch } from './GitHubSourceSearch'
 import { SourceCard } from './SourceCard'
 import type { GitHubInstallation, Workspace, WorkspaceSource } from '@/types/workspace'
@@ -29,33 +29,71 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  function suggestedNameForInstallation(installation: GitHubInstallation) {
+    return installation.accountType === 'User' ? 'Personal' : installation.accountLogin
+  }
+
+  function suggestedNameForSource(source: WorkspaceSource) {
+    if (source.type === 'user') return 'Personal'
+    if (source.type === 'org') return source.value
+    return source.value.split('/').pop() ?? source.value
+  }
+
+  function applyDefaultName(nextName: string) {
+    if (isEditing) return
+    setName((current) => current.trim() ? current : nextName)
+  }
+
+  function selectInstallation(installationId: number) {
+    setSelectedInstallationId(installationId)
+    const installation = installations.find((item) => item.installationId === installationId)
+    if (installation) applyDefaultName(suggestedNameForInstallation(installation))
+  }
+
+  function loadInstallations() {
+    setError(null)
+    setLoadingInstallations(true)
+    fetch('/api/github/installations')
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok && !data.error) {
+          throw new Error(`Failed to load GitHub App installations (${res.status})`)
+        }
+        return data
+      })
+      .then((data) => {
+        const nextInstallations = data.installations ?? []
+        setInstallations(nextInstallations)
+        setInstallUrl(data.installUrl ?? null)
+        setSetupUrl(data.setupUrl ?? null)
+        setError(data.error ?? null)
+        if (!workspace?.githubInstallationId && nextInstallations.length === 1) {
+          setSelectedInstallationId(nextInstallations[0].installationId)
+          applyDefaultName(suggestedNameForInstallation(nextInstallations[0]))
+        }
+      })
+      .catch((err) => {
+        setInstallations([])
+        setError(err instanceof Error ? err.message : 'Failed to load GitHub App installations')
+      })
+      .finally(() => setLoadingInstallations(false))
+  }
+
   useEffect(() => {
     if (open) {
       setName(workspace?.name ?? '')
       setSources(workspace?.sources ?? [])
       setSelectedInstallationId(workspace?.githubInstallationId ?? null)
-      setError(null)
-      setLoadingInstallations(true)
-      fetch('/api/github/installations')
-        .then((res) => res.json())
-        .then((data) => {
-          const nextInstallations = data.installations ?? []
-          setInstallations(nextInstallations)
-          setInstallUrl(data.installUrl ?? null)
-          setSetupUrl(data.setupUrl ?? null)
-          if (data.error) setError(data.error)
-          if (!workspace?.githubInstallationId && nextInstallations.length === 1) {
-            setSelectedInstallationId(nextInstallations[0].installationId)
-          }
-        })
-        .catch(() => setError('Failed to load GitHub App installations'))
-        .finally(() => setLoadingInstallations(false))
+      loadInstallations()
     }
+    // loadInstallations intentionally reads latest workspace state on dialog open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, workspace])
 
   function addSource(source: WorkspaceSource) {
     if (sources.some((s) => s.type === source.type && s.value === source.value)) return
     setSources([...sources, source])
+    applyDefaultName(suggestedNameForSource(source))
   }
 
   function removeSource(index: number) {
@@ -158,7 +196,7 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
               ) : installations.length > 0 ? (
                 <select
                   value={selectedInstallationId ?? ''}
-                  onChange={(e) => setSelectedInstallationId(Number(e.target.value))}
+                  onChange={(e) => selectInstallation(Number(e.target.value))}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-[13px] text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="" disabled>Select an installation</option>
@@ -169,32 +207,43 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
                   ))}
                 </select>
               ) : (
-                <div className="rounded-md border border-border bg-muted/30 p-3 text-[12px] text-muted-foreground">
-                  No accessible GitHub App installations found.
+                <div className="rounded-md border border-border bg-muted/30 p-3">
+                  <div className="text-[12px] font-medium text-foreground">
+                    Install the GitHub App to continue
+                  </div>
+                  <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                    The app exists, but it is not installed on any GitHub account
+                    this user can access.
+                  </p>
                   {setupUrl ? (
-                    <>
-                      {' '}
+                    <div className="mt-3">
                       <a
                         href={setupUrl}
-                        className="font-medium text-primary hover:underline"
+                        className="inline-flex h-8 items-center rounded-md border border-border px-3 text-[12px] font-medium text-foreground hover:bg-muted"
                       >
                         Reconnect the GitHub App
                       </a>
-                      .
-                    </>
+                    </div>
                   ) : installUrl && (
-                    <>
-                      {' '}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                       <a
                         href={installUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md bg-foreground px-3 text-[12px] font-medium text-background hover:bg-foreground/90"
                       >
-                        Install the GitHub App
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Install GitHub App
                       </a>
-                      , then reopen this dialog.
-                    </>
+                      <button
+                        type="button"
+                        onClick={loadInstallations}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-[12px] font-medium text-foreground hover:bg-muted"
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                        Retry
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -208,11 +257,17 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
                 Search for GitHub orgs, users, or repos to track.
               </p>
 
-              <GitHubSourceSearch
-                existingSources={sources}
-                installationId={selectedInstallationId}
-                onAdd={addSource}
-              />
+              {selectedInstallationId ? (
+                <GitHubSourceSearch
+                  existingSources={sources}
+                  installationId={selectedInstallationId}
+                  onAdd={addSource}
+                />
+              ) : (
+                <div className="rounded-md border border-dashed border-border bg-muted/20 px-3 py-2 text-[12px] text-muted-foreground">
+                  Install and select a GitHub App installation before adding sources.
+                </div>
+              )}
             </div>
           </div>
 
@@ -234,7 +289,16 @@ export function WorkspaceDialog({ open, onClose, workspace, dismissable = true }
 
           <div className="px-6 pb-6 pt-3 shrink-0">
             {error && (
-              <p className="text-[12px] text-destructive mb-3">{error}</p>
+              <div className="mb-3 flex items-center justify-between gap-3 text-[12px] text-destructive">
+                <span>{error}</span>
+                <button
+                  type="button"
+                  onClick={loadInstallations}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Retry
+                </button>
+              </div>
             )}
 
             <div className="flex justify-end gap-2 pt-2 border-t border-border">

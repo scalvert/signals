@@ -7,6 +7,7 @@ import {
   getTask,
   upsertWorkspaceMember,
 } from '@/lib/db/queries'
+import { ensureUserFromSession } from './users'
 import { canUserAccessInstallation } from '@/lib/github/installations'
 import type { Session } from 'next-auth'
 import type { Task, Workspace, WorkspaceMember, WorkspaceRole } from '@/types/workspace'
@@ -45,7 +46,11 @@ export function accessErrorResponse(error: unknown) {
 export async function requireSession(): Promise<AccessSession> {
   const { auth } = getAuth()
   const session = await auth()
-  const userId = session?.user?.id ? Number(session.user.id) : NaN
+  if (session?.error) {
+    throw new AccessError(401, 'Authentication refresh required')
+  }
+  const ensuredUser = session ? ensureUserFromSession(session) : null
+  const userId = ensuredUser?.id ?? (session?.user?.id ? Number(session.user.id) : NaN)
 
   if (!session?.user?.githubLogin || !Number.isFinite(userId)) {
     throw new AccessError(401, 'Not authenticated')
@@ -54,7 +59,7 @@ export async function requireSession(): Promise<AccessSession> {
   return {
     session,
     userId,
-    githubLogin: session.user.githubLogin,
+    githubLogin: ensuredUser?.githubLogin ?? session.user.githubLogin,
   }
 }
 

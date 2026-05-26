@@ -30,6 +30,19 @@ import {
 import { getWorkspaceMember } from '@/lib/db/queries'
 
 function setSession(userId: number, githubLogin: string) {
+  sqlite.prepare(
+    `INSERT OR REPLACE INTO users (id, github_login, name, avatar_url, access_token, refresh_token, token_expires_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    userId,
+    githubLogin,
+    githubLogin,
+    `https://avatars.githubusercontent.com/u/${userId}?v=4`,
+    `gho_user_${userId}`,
+    null,
+    null,
+    new Date().toISOString(),
+  )
   authState.session = {
     user: {
       id: String(userId),
@@ -85,8 +98,10 @@ function seedTask(workspaceId: number) {
 describe('workspace access', () => {
   beforeEach(() => {
     sqlite.exec('DELETE FROM tasks')
+    sqlite.exec('DELETE FROM repo_permissions')
     sqlite.exec('DELETE FROM workspace_members')
     sqlite.exec('DELETE FROM workspaces')
+    sqlite.exec('DELETE FROM users')
     githubInstallationState.canUserAccessInstallation.mockReset()
     authState.session = null
   })

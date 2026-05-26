@@ -18,6 +18,18 @@ export const staleBotPRs: SignalDefinition = {
     fixable: true,
     fixInfo: {
       description: 'Bulk merge or close stale dependency update PRs',
+      dispatch: 'agent' as const,
+      objective: 'Dependency update PRs are triaged into a safe merge/refresh/close plan.',
+      prompt: [
+        'Triage stale bot PRs for {{repoFullName}}.',
+        '',
+        'The bot PRs are: {{prNumbers}}.',
+        'Inspect each dependency PR, CI status, age, and whether a newer update supersedes it.',
+        'Prefer safe, reversible actions: update superseded PRs with a comment, close clearly obsolete PRs if policy allows, or open a small PR/report that summarizes what should be merged manually.',
+        'Do not merge risky dependency updates without passing tests and clear confidence.',
+      ].join('\n'),
+      needs: { repoAccess: 'write' as const, github: ['pulls', 'comments'] as const },
+      expectedOutcome: 'pr-created' as const,
     },
     dedupDays: 14,
   },

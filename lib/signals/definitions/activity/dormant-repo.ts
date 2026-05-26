@@ -16,6 +16,17 @@ export const dormantRepo: SignalDefinition = {
     fixable: true,
     fixInfo: {
       description: 'Triage: commit a maintenance update, add a status notice, or archive the repo',
+      dispatch: 'agent' as const,
+      objective: 'The repository has a clear maintainer-facing update that addresses the dormant state.',
+      prompt: [
+        'Triage the dormant state for {{repoFullName}}.',
+        '',
+        'The repository has had no commits for {{daysSinceLastCommit}} days.',
+        'Inspect the README, issues, PRs, and release history. Choose the smallest useful maintenance action: refresh stale documentation, add a maintenance/status note, close obvious dead links, or prepare an archive recommendation.',
+        'Do not make broad rewrites. If code changes are not justified, open a PR with documentation/status changes and a clear summary of the maintenance decision.',
+      ].join('\n'),
+      needs: { repoAccess: 'write' as const, github: ['issues', 'pulls'] as const },
+      expectedOutcome: 'pr-created' as const,
     },
     dedupDays: 30,
     suppressionKeywords: [

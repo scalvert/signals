@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { accessErrorResponse, requireSession } from '@/lib/auth/access'
 import { getInstallationOctokit } from '@/lib/github/app'
 import { canUserAccessInstallation } from '@/lib/github/installations'
+import { getGitHubInstallationByInstallationId } from '@/lib/db/queries'
 
 export async function GET(req: Request) {
   try {
@@ -28,12 +29,24 @@ export async function GET(req: Request) {
       )
     }
 
+    const installation = getGitHubInstallationByInstallationId(installationId)
+    if (!installation) {
+      return NextResponse.json(
+        { error: 'GitHub App installation not found', orgs: [], users: [], repos: [] },
+        { status: 404 },
+      )
+    }
+
     const octokit = getInstallationOctokit(installationId)
+    const ownerQualifier =
+      installation.accountType === 'Organization'
+        ? `org:${installation.accountLogin}`
+        : `user:${installation.accountLogin}`
 
     const [orgUserResult, repoResult] = await Promise.all([
       octokit.rest.search.users({ q: `${query}`, per_page: 10 })
         .catch(() => ({ data: { items: [] } })),
-      octokit.rest.search.repos({ q: `user:${query} fork:true`, per_page: 10 })
+      octokit.rest.search.repos({ q: `${query} in:name ${ownerQualifier} fork:true`, per_page: 10 })
         .catch(() => ({ data: { items: [] } })),
     ])
 

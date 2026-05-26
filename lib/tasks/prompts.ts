@@ -75,6 +75,9 @@ export function buildPrompt(
     if (ctx.repoContext) {
       lines.push('', '## Repository context', ctx.repoContext)
     }
+    if (ctx.metadata && Object.keys(ctx.metadata).length > 0) {
+      lines.push('', '## Signal metadata', JSON.stringify(ctx.metadata, null, 2))
+    }
   }
 
   lines.push(

@@ -18,6 +18,19 @@ export const newContributor: SignalDefinition = {
     fixable: true,
     fixInfo: {
       description: 'Welcome the contributor and review their PR promptly',
+      dispatch: 'llm' as const,
+      objective: 'The new contributor receives a timely, specific welcome comment on their PR.',
+      prompt: [
+        'You are a maintainer of {{repoFullName}}.',
+        '',
+        '@{{authorLogin}} opened their first contribution: PR #{{prNumber}} "{{prTitle}}".',
+        '',
+        'Read the PR enough to write a specific, respectful welcome comment.',
+        'Thank them for the contribution, mention one concrete thing about the PR, and set expectations for review.',
+        'Post exactly one comment on the PR.',
+      ].join('\n'),
+      needs: { repoAccess: 'none' as const, github: ['pulls', 'comments'] as const },
+      expectedOutcome: 'comment-posted' as const,
     },
   },
 

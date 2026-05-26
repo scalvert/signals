@@ -7,6 +7,17 @@ sqlite.pragma('journal_mode = WAL')
 sqlite.pragma('foreign_keys = ON')
 
 sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    github_login TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    avatar_url TEXT NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    token_expires_at TEXT,
+    created_at TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS workspaces (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -52,6 +63,20 @@ sqlite.exec(`
 
   CREATE UNIQUE INDEX IF NOT EXISTS repo_permissions_workspace_user_repo_idx
     ON repo_permissions (workspace_id, user_id, repo_full_name);
+
+  CREATE TABLE IF NOT EXISTS dispatch_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    config TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS dispatch_targets_workspace_type_idx
+    ON dispatch_targets (workspace_id, type);
 
   CREATE TABLE IF NOT EXISTS repos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,6 +139,28 @@ sqlite.exec(`
     status_line TEXT,
     created_at TEXT NOT NULL,
     dispatched_at TEXT,
+    completed_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS task_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL,
+    workspace_id INTEGER NOT NULL,
+    dispatch_target_id INTEGER,
+    orchestrator TEXT NOT NULL,
+    runner TEXT NOT NULL,
+    status TEXT NOT NULL,
+    external_id TEXT,
+    external_url TEXT,
+    branch TEXT,
+    pr_url TEXT,
+    summary TEXT,
+    error TEXT,
+    raw_state TEXT,
+    dispatched_by_user_id INTEGER NOT NULL,
+    executed_by_identity TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
     completed_at TEXT
   );
 `)

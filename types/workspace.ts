@@ -9,6 +9,62 @@ export interface User {
 export type WorkspaceRole = 'owner' | 'member' | 'viewer'
 export type GitHubAccountType = 'Organization' | 'User'
 export type GitHubRepoPermission = 'none' | 'read' | 'triage' | 'write' | 'maintain' | 'admin'
+export type AgentRunner = 'codex' | 'claude-code' | 'cursor' | 'opencode' | (string & {})
+export type ExecutionOrchestrator = 'agent-orchestrator'
+export type DispatchTargetType = ExecutionOrchestrator
+export type TaskRunStatus =
+  | 'queued'
+  | 'running'
+  | 'needs-input'
+  | 'review'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+
+export interface AgentOrchestratorConfig {
+  aoCommand: string
+  aoCwd: string
+  projectId: string
+  dashboardUrl: string | null
+  defaultRunner: AgentRunner
+  allowedRunners: AgentRunner[]
+  runnerIdentity: string
+}
+
+export type DispatchTargetConfig = AgentOrchestratorConfig
+
+export interface DispatchTarget {
+  id: number
+  workspaceId: number
+  type: DispatchTargetType
+  name: string
+  enabled: boolean
+  config: DispatchTargetConfig
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskRun {
+  id: number
+  taskId: number
+  workspaceId: number
+  dispatchTargetId: number | null
+  orchestrator: ExecutionOrchestrator
+  runner: AgentRunner
+  status: TaskRunStatus
+  externalId: string | null
+  externalUrl: string | null
+  branch: string | null
+  prUrl: string | null
+  summary: string | null
+  error: string | null
+  rawState: Record<string, unknown> | null
+  dispatchedByUserId: number
+  executedByIdentity: string
+  createdAt: string
+  updatedAt: string
+  completedAt: string | null
+}
 
 export interface WorkspaceMember {
   id: number

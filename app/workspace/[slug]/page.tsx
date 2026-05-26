@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getRepoDashboardRows } from '@/lib/db/queries'
+import { getDispatchTargetForWorkspace, getRepoDashboardRows } from '@/lib/db/queries'
 import { requireWorkspaceAccessBySlug } from '@/lib/auth/access'
 import { applyRepoPermissionsToDashboardRows } from '@/lib/github/permissions'
 import { InstallationRequired } from '@/components/workspace/InstallationRequired'
@@ -25,6 +25,13 @@ export default async function DashboardPage({
     userId,
     githubLogin,
   )
+  const agentOrchestratorTarget = getDispatchTargetForWorkspace(workspace.id, 'agent-orchestrator')
 
-  return <Dashboard rows={rows} workspaceId={workspace.id} />
+  return (
+    <Dashboard
+      rows={rows}
+      workspaceId={workspace.id}
+      dispatchTarget={agentOrchestratorTarget}
+    />
+  )
 }

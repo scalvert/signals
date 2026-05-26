@@ -37,6 +37,16 @@ function getAuthConfig(): NextAuthConfig {
           token.accessToken = account.access_token
           token.refreshToken = account.refresh_token
           token.expiresAt = account.expires_at
+          token.authClientId = clientId
+          token.error = undefined
+        }
+
+        if (!account && token.githubLogin && token.authClientId !== clientId) {
+          token.error = 'AuthAppChanged'
+          token.accessToken = undefined
+          token.refreshToken = undefined
+          token.expiresAt = undefined
+          return token
         }
 
         if (token.expiresAt && Date.now() > (token.expiresAt as number) * 1000) {
@@ -82,7 +92,7 @@ function getAuthConfig(): NextAuthConfig {
         session.user.id = String(token.userId)
         session.user.githubLogin = token.githubLogin as string
         session.user.avatarUrl = token.avatarUrl as string
-        session.accessToken = token.accessToken as string
+        session.accessToken = (token.accessToken as string | undefined) ?? ''
         if (token.error) session.error = token.error as string
         return session
       },
@@ -120,6 +130,7 @@ declare module '@auth/core/jwt' {
     accessToken?: string
     refreshToken?: string
     expiresAt?: number
+    authClientId?: string
     error?: string
   }
 }

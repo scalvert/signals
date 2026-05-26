@@ -4,10 +4,15 @@ vi.mock('./client')
 
 import { sqlite } from './__mocks__/client'
 import {
+  createTaskRun,
   createTask,
+  getLatestTaskRun,
   getTask,
+  getTaskRuns,
   getTasks,
   updateTaskStatus,
+  updateTaskRun,
+  upsertAgentOrchestratorDispatchTarget,
   addTaskNote,
 } from './queries'
 
@@ -33,6 +38,8 @@ describe('task query functions', () => {
   let workspaceId: number
 
   beforeEach(() => {
+    sqlite.exec('DELETE FROM task_runs')
+    sqlite.exec('DELETE FROM dispatch_targets')
     sqlite.exec('DELETE FROM tasks')
     sqlite.exec('DELETE FROM workspaces')
     workspaceId = seedWorkspace()
@@ -453,6 +460,94 @@ describe('task query functions', () => {
     it('returns undefined for non-existent task', () => {
       const result = addTaskNote(99999, 'note', 'system')
       expect(result).toBeUndefined()
+    })
+  })
+
+  describe('task runs', () => {
+    it('stores dispatching user and runner identity', () => {
+      const target = upsertAgentOrchestratorDispatchTarget({
+        workspaceId,
+        enabled: true,
+        config: {
+          aoCommand: 'ao',
+          aoCwd: '/tmp/work',
+          projectId: 'signals',
+          dashboardUrl: 'http://localhost:3000',
+          defaultRunner: 'codex',
+          allowedRunners: ['codex'],
+          runnerIdentity: 'signals-runner',
+        },
+      })
+      const task = createTask({
+        workspaceId,
+        repoFullName: 'org/repo',
+        title: 'Task',
+        description: 'Desc',
+        sourceType: 'signal',
+        sourceId: 's-1',
+      })
+
+      const run = createTaskRun({
+        taskId: task.id,
+        workspaceId,
+        dispatchTargetId: target.id,
+        orchestrator: 'agent-orchestrator',
+        runner: 'codex',
+        status: 'running',
+        externalId: 'sig-1',
+        externalUrl: 'http://localhost:3000/projects/signals/sessions/sig-1',
+        rawState: { status: 'working' },
+        dispatchedByUserId: 7,
+        executedByIdentity: 'signals-runner',
+      })
+
+      expect(run.dispatchedByUserId).toBe(7)
+      expect(run.executedByIdentity).toBe('signals-runner')
+      expect(run.rawState).toEqual({ status: 'working' })
+      expect(getLatestTaskRun(task.id)?.externalId).toBe('sig-1')
+    })
+
+    it('updates run state and lists newest first', () => {
+      const task = createTask({
+        workspaceId,
+        repoFullName: 'org/repo',
+        title: 'Task',
+        description: 'Desc',
+        sourceType: 'signal',
+        sourceId: 's-1',
+      })
+      const first = createTaskRun({
+        taskId: task.id,
+        workspaceId,
+        dispatchTargetId: null,
+        orchestrator: 'agent-orchestrator',
+        runner: 'codex',
+        status: 'running',
+        dispatchedByUserId: 7,
+        executedByIdentity: 'signals-runner',
+      })
+      const second = createTaskRun({
+        taskId: task.id,
+        workspaceId,
+        dispatchTargetId: null,
+        orchestrator: 'agent-orchestrator',
+        runner: 'claude-code',
+        status: 'running',
+        dispatchedByUserId: 7,
+        executedByIdentity: 'signals-runner',
+      })
+
+      const updated = updateTaskRun(first.id, {
+        status: 'review',
+        branch: 'fix/ci',
+        prUrl: 'https://github.com/org/repo/pull/1',
+      })
+      const runs = getTaskRuns(task.id)
+
+      expect(updated?.status).toBe('review')
+      expect(updated?.branch).toBe('fix/ci')
+      expect(runs[0].id).toBe(second.id)
+      expect(runs[1].id).toBe(first.id)
     })
   })
 })

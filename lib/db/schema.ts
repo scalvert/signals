@@ -55,6 +55,19 @@ export const repoPermissions = sqliteTable('repo_permissions', {
   uniqueIndex('repo_permissions_workspace_user_repo_idx').on(table.workspaceId, table.userId, table.repoFullName),
 ])
 
+export const dispatchTargets = sqliteTable('dispatch_targets', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  workspaceId: integer('workspace_id').notNull(),
+  type: text('type').notNull(),
+  name: text('name').notNull(),
+  enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
+  config: text('config').notNull().default('{}'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  uniqueIndex('dispatch_targets_workspace_type_idx').on(table.workspaceId, table.type),
+])
+
 export const repos = sqliteTable('repos', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   workspaceId: integer('workspace_id').notNull(),
@@ -151,6 +164,28 @@ export const tasks = sqliteTable('tasks', {
   statusLine: text('status_line'),
   createdAt: text('created_at').notNull(),
   dispatchedAt: text('dispatched_at'),
+  completedAt: text('completed_at'),
+})
+
+export const taskRuns = sqliteTable('task_runs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  taskId: integer('task_id').notNull(),
+  workspaceId: integer('workspace_id').notNull(),
+  dispatchTargetId: integer('dispatch_target_id'),
+  orchestrator: text('orchestrator').notNull(),
+  runner: text('runner').notNull(),
+  status: text('status').notNull(),
+  externalId: text('external_id'),
+  externalUrl: text('external_url'),
+  branch: text('branch'),
+  prUrl: text('pr_url'),
+  summary: text('summary'),
+  error: text('error'),
+  rawState: text('raw_state'),
+  dispatchedByUserId: integer('dispatched_by_user_id').notNull(),
+  executedByIdentity: text('executed_by_identity').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
   completedAt: text('completed_at'),
 })
 

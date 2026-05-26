@@ -82,7 +82,7 @@ export async function refreshRepoPermission(
     const status = typeof error === 'object' && error && 'status' in error
       ? Number((error as { status?: number }).status)
       : 0
-    if (status === 403 || status === 404) {
+    if (status === 401 || status === 403 || status === 404) {
       return upsertRepoPermission({
         workspaceId,
         userId,
@@ -139,4 +139,3 @@ export async function requireRepoDispatchPermission(
   }
   return permission
 }
-

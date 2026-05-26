@@ -9,7 +9,7 @@ import { SignalActionCard } from './SignalActionCard'
 import { TaskTimeline } from './TaskTimeline'
 import { RepoContextEditor } from './RepoContextEditor'
 import type { RepoDashboardRow } from '@/lib/db/queries'
-import type { TriageStatus } from '@/types/workspace'
+import type { DispatchTarget, TriageStatus } from '@/types/workspace'
 
 const triageBorderLeft: Record<TriageStatus, string> = {
   healthy: 'border-l-3 border-l-health-a',
@@ -45,10 +45,11 @@ interface Props {
   expanded: boolean
   onToggle: () => void
   workspaceId: number
+  dispatchTarget?: DispatchTarget
   onChange: () => void
 }
 
-export function RepoRow({ row, expanded, onToggle, workspaceId, onChange }: Props) {
+export function RepoRow({ row, expanded, onToggle, workspaceId, dispatchTarget, onChange }: Props) {
   const { repo, signals, signalTasks, recentTasks, activeTaskCount } = row
   const severityClass = worstSeverityColor(row)
   const Chevron = expanded ? ChevronDown : ChevronRight
@@ -142,6 +143,7 @@ export function RepoRow({ row, expanded, onToggle, workspaceId, onChange }: Prop
                       workspaceId={workspaceId}
                       canDispatch={row.canDispatch}
                       permissionReason={row.permissionReason}
+                      dispatchTarget={dispatchTarget}
                       onChange={onChange}
                     />
                   ))}

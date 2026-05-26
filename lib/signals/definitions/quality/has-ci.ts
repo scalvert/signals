@@ -17,6 +17,17 @@ export const hasCI: SignalDefinition = {
     fixInfo: {
       description:
         'Add a .github/workflows directory with at least a basic CI workflow',
+      dispatch: 'agent' as const,
+      objective: 'A minimal CI workflow is added and documented enough for future maintainers to extend.',
+      prompt: [
+        'Add CI coverage for {{repoFullName}}.',
+        '',
+        'Inspect the repository to determine the language, package manager, and existing test/build commands.',
+        'Create a minimal GitHub Actions workflow under .github/workflows/ that runs on pull requests and pushes.',
+        'Prefer the repo-native test command. If no tests exist, use the safest build/lint/smoke check available and leave a concise note in the PR summary.',
+      ].join('\n'),
+      needs: { repoAccess: 'write' as const, github: ['pulls'] as const },
+      expectedOutcome: 'pr-created' as const,
     },
   },
 

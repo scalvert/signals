@@ -32,6 +32,12 @@ export async function GET(req: Request) {
 
     console.info('[signals] GitHub App created:', data.name)
 
+    if (data.slug) {
+      return NextResponse.redirect(
+        `https://github.com/apps/${data.slug}/installations/new`,
+      )
+    }
+
     return NextResponse.redirect(new URL('/setup', req.url))
   } catch (err) {
     console.error('[signals] Setup callback error:', err)

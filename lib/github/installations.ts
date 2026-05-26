@@ -46,6 +46,21 @@ export async function syncGitHubInstallations(): Promise<GitHubInstallation[]> {
     .map(upsertGitHubInstallation)
 }
 
+export async function listVisibleInstallations(
+  githubLogin: string,
+): Promise<GitHubInstallation[]> {
+  const installations = await syncGitHubInstallations()
+  const visible: GitHubInstallation[] = []
+
+  for (const installation of installations) {
+    if (await canUserAccessInstallation(installation.installationId, githubLogin)) {
+      visible.push(installation)
+    }
+  }
+
+  return visible
+}
+
 export async function canUserAccessInstallation(
   installationId: number,
   githubLogin: string,

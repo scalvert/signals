@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getRepos } from '@/lib/db/queries'
+import { getDispatchTargetForWorkspace, getRepos } from '@/lib/db/queries'
 import { requireWorkspaceAccessBySlug } from '@/lib/auth/access'
 import { SettingsView } from './settings-view'
 
@@ -15,12 +15,14 @@ export default async function SettingsPage({
 
   const repos = getRepos(workspace.id)
   const allRepoNames = repos.map((r) => r.fullName).sort()
+  const agentOrchestratorTarget = getDispatchTargetForWorkspace(workspace.id, 'agent-orchestrator')
 
   return (
     <SettingsView
       workspace={workspace}
       allRepoNames={allRepoNames}
       canEdit={membership.role === 'owner'}
+      agentOrchestratorTarget={agentOrchestratorTarget}
     />
   )
 }

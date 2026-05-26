@@ -16,6 +16,17 @@ export const hasContributing: SignalDefinition = {
     fixable: true,
     fixInfo: {
       description: 'Add a CONTRIBUTING.md to help new contributors get started',
+      dispatch: 'agent' as const,
+      objective: 'A practical CONTRIBUTING.md is added for new contributors.',
+      prompt: [
+        'Add a CONTRIBUTING.md for {{repoFullName}}.',
+        '',
+        'Inspect the repository for setup, test, lint, formatting, and release conventions.',
+        'Write a concise guide that covers local setup, how to run checks, branch/PR expectations, and where contributors should ask questions.',
+        'Avoid inventing process details that are not supported by the repository.',
+      ].join('\n'),
+      needs: { repoAccess: 'write' as const, github: ['pulls'] as const },
+      expectedOutcome: 'pr-created' as const,
     },
   },
 

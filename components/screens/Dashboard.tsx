@@ -7,6 +7,7 @@ import { MultiSelectFilter } from '@/components/shared/MultiSelectFilter'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { RepoRow } from '@/components/dashboard/RepoRow'
 import type { RepoDashboardRow } from '@/lib/db/queries'
+import type { DispatchTarget } from '@/types/workspace'
 
 type FilterMode = 'all' | 'has-signal' | 'tasks'
 type SortKey = 'health-desc' | 'health-asc' | 'name' | 'signals' | 'recent-activity'
@@ -20,9 +21,10 @@ const healthColors: Record<string, string> = {
 interface Props {
   rows: RepoDashboardRow[]
   workspaceId: number
+  dispatchTarget?: DispatchTarget
 }
 
-export function Dashboard({ rows, workspaceId }: Props) {
+export function Dashboard({ rows, workspaceId, dispatchTarget }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -218,6 +220,7 @@ export function Dashboard({ rows, workspaceId }: Props) {
               expanded={expanded.has(row.repo.fullName)}
               onToggle={() => toggleExpanded(row.repo.fullName)}
               workspaceId={workspaceId}
+              dispatchTarget={dispatchTarget}
               onChange={refresh}
             />
           ))

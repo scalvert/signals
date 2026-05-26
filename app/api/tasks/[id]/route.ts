@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { accessErrorResponse, requireTaskAccess } from '@/lib/auth/access'
+import { syncLatestTaskRun } from '@/lib/dispatch/runs'
 
 export async function GET(
   _req: Request,
@@ -13,6 +14,10 @@ export async function GET(
 
   try {
     const { task } = await requireTaskAccess(taskId)
+    if (task.status === 'active') {
+      const synced = await syncLatestTaskRun(taskId)
+      return NextResponse.json({ task: synced.task ?? task, run: synced.run })
+    }
     return NextResponse.json({ task })
   } catch (error) {
     return accessErrorResponse(error)

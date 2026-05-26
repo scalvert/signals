@@ -15,6 +15,17 @@ export const hasLicense: SignalDefinition = {
     fixable: true,
     fixInfo: {
       description: 'Add a LICENSE file (MIT recommended for OSS)',
+      dispatch: 'agent' as const,
+      objective: 'A LICENSE file is added with a defensible default for an OSS repository.',
+      prompt: [
+        'Add an appropriate LICENSE file for {{repoFullName}}.',
+        '',
+        'Use MIT as the default unless repository context clearly points to another license.',
+        'Use the current year and the repository owner or project owner in the copyright line.',
+        'If the repository already contains license language elsewhere, preserve it and avoid introducing a conflicting license.',
+      ].join('\n'),
+      needs: { repoAccess: 'write' as const, github: ['pulls'] as const },
+      expectedOutcome: 'pr-created' as const,
     },
   },
 

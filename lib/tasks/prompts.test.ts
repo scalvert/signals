@@ -39,6 +39,7 @@ describe('buildPrompt', () => {
         fixGuidance: 'Push a commit or close the repo.',
         docsSummary: 'Checks last commit date against a 30-day threshold.',
         repoContext: 'Stable utility, rarely changes.',
+        metadata: { daysSinceLastCommit: 45 },
       },
     })
     expect(prompt).toContain('## Why this matters')
@@ -49,6 +50,8 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('Checks last commit date against a 30-day threshold.')
     expect(prompt).toContain('## Repository context')
     expect(prompt).toContain('Stable utility, rarely changes.')
+    expect(prompt).toContain('## Signal metadata')
+    expect(prompt).toContain('"daysSinceLastCommit": 45')
   })
 
   it('omits optional sections when not provided', () => {
