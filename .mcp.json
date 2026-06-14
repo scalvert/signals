@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "signals": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp.ts"]
+    }
+  }
+}

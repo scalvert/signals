@@ -1,54 +1,26 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
-import { repos, pullRequests, syncLog, scoreHistory } from '@/lib/db/schema'
-import { getRepos, getSignals, getDismissedChecks, getTasks, updateTaskStatus, addTaskNote } from '@/lib/db/queries'
+import { repos, pullRequests, syncLog, scoreHistory, signals } from '@/lib/db/schema'
+import {
+  getRepos,
+  getPullRequests,
+  getSignals,
+  getRepoContextsForWorkspace,
+  getDismissedChecks,
+  getTasks,
+  updateTaskStatus,
+  addTaskNote,
+  getSetting,
+} from '@/lib/db/queries'
 import { getInstallationOctokit } from '@/lib/github/app'
 import { fetchReposForWorkspace } from '@/lib/github/fetch-repos'
 import { fetchPRsForWorkspace } from '@/lib/github/fetch-prs'
-import { scoreRepo, runSignalDetection } from '@/lib/signals/engine'
-import type { Workspace, WorkspaceSource, PullRequest } from '@/types/workspace'
+import { registry } from '@/lib/signals/registry'
+import { scoreRepo, detectEvents, type DetectedSignal } from '@/lib/signals/engine'
+import { enrichSignals } from '@/lib/signals/enrichment'
+import { filterReposForWorkspace } from '@/lib/github/filter-repos'
+import type { Workspace, PullRequest, Repo, Signal } from '@/types/workspace'
 import type { RepoSnapshot } from '@/lib/signals/types'
-
-export function filterReposBySourceSelection<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(repos: T[], sources: WorkspaceSource[]): T[] {
-  const included = new Set<string>()
-
-  for (const source of sources) {
-    if (source.type === 'repo') {
-      included.add(source.value)
-      continue
-    }
-
-    const prefix = source.value + '/'
-    const sourceRepos = repos.filter((r) => r.fullName.startsWith(prefix))
-    const selection = source.repos
-
-    for (const repo of sourceRepos) {
-      if (selection?.visibility === 'public' && repo.isPrivate) continue
-      if (selection?.visibility === 'private' && !repo.isPrivate) continue
-      if (selection?.excludeForks && repo.isFork) continue
-
-      if (selection?.mode === 'selected') {
-        if (!selection.selected.includes(repo.name)) continue
-      } else if (selection?.mode === 'all' && selection.selected.length > 0) {
-        if (selection.selected.includes(repo.name)) continue
-      }
-
-      included.add(repo.fullName)
-    }
-  }
-
-  return repos.filter((r) => included.has(r.fullName))
-}
-
-export function filterReposForWorkspace<T extends { name: string; fullName: string; isFork: boolean; isPrivate: boolean }>(
-  repos: T[],
-  sources: WorkspaceSource[],
-  excludedRepos: string[],
-): T[] {
-  const excluded = new Set(excludedRepos)
-  return filterReposBySourceSelection(repos, sources)
-    .filter((repo) => !excluded.has(repo.fullName))
-}
 
 export async function syncWorkspace(workspace: Workspace): Promise<{
   repoCount: number
@@ -233,4 +205,73 @@ export async function syncWorkspace(workspace: Workspace): Promise<{
 
     throw err
   }
+}
+
+export async function runSignalDetection(
+  workspaceId: number,
+  previousRepos: Repo[],
+): Promise<number> {
+  const currentRepos = getRepos(workspaceId)
+  const prs = getPullRequests(workspaceId)
+  const existingSignals = getSignals(workspaceId)
+  const repoContexts = getRepoContextsForWorkspace(workspaceId)
+  const prevMap = new Map(previousRepos.map((r) => [r.fullName, r]))
+  const now = new Date().toISOString()
+
+  const allDetected: DetectedSignal[] = []
+
+  for (const repo of currentRepos) {
+    const previousRepo = prevMap.get(repo.fullName)
+    const repoContext = repoContexts.get(repo.fullName)
+    const detected = detectEvents(repo, previousRepo, prs, existingSignals, repoContext)
+    allDetected.push(...detected)
+  }
+
+  const insertedSignals: Signal[] = []
+  for (const signal of allDetected) {
+    const result = db
+      .insert(signals)
+      .values({
+        workspaceId,
+        type: signal.type,
+        severity: signal.severity,
+        title: signal.title,
+        body: signal.body,
+        repoFullName: signal.repoFullName,
+        metadata: JSON.stringify(signal.metadata),
+        detectedAt: now,
+        fixable: registry.get(signal.type)?.meta.fixable ? 1 : 0,
+      })
+      .returning()
+      .get()
+    insertedSignals.push({
+      ...result,
+      type: result.type as Signal['type'],
+      severity: result.severity as Signal['severity'],
+      status: 'active' as const,
+      dismissedReason: null,
+      enrichedBody: null,
+      metadata: JSON.parse(result.metadata) as Record<string, unknown>,
+      fixable: result.fixable === 1,
+    })
+  }
+
+  const enrichmentEnabled = getSetting('enrichment.enabled')
+  const enrichmentModel = getSetting('enrichment.model')
+  if (
+    enrichmentEnabled === 'true' &&
+    enrichmentModel &&
+    process.env.ANTHROPIC_API_KEY &&
+    insertedSignals.length > 0
+  ) {
+    const enrichments = await enrichSignals(insertedSignals, repoContexts, enrichmentModel)
+    for (const [signalId, enrichedBody] of enrichments) {
+      db.update(signals)
+        .set({ enrichedBody })
+        .where(eq(signals.id, signalId))
+        .run()
+    }
+  }
+
+  return allDetected.length
 }

@@ -9,7 +9,7 @@ const EXTERNAL_ASSOCIATIONS = new Set([
   'NONE',
 ])
 
-interface RawPullRequest {
+export interface RawPullRequest {
   number: number
   title: string
   url: string

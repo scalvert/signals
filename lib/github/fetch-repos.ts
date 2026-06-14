@@ -3,7 +3,7 @@ import { ORG_REPOS_QUERY, USER_REPOS_QUERY, SINGLE_REPO_QUERY } from './queries'
 import type { GitHubRepoNode } from './types'
 import type { WorkspaceSource } from '@/types/workspace'
 
-interface RawRepo {
+export interface RawRepo {
   name: string
   fullName: string
   description: string | null

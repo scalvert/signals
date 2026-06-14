@@ -1,0 +1,44 @@
+# Signals configuration — the single place to configure Signals.
+#
+# This file holds non-secret settings only. Secrets (Slack webhook URL, SMTP
+# credentials, API keys) come from environment variables / GitHub Actions
+# secrets, named in the comments below — never put secret values in this file
+# (this repo is public; committed secrets leak permanently into git history).
+
+# ── What to watch ────────────────────────────────────────────────────────────
+# One or more sources. type: user | org | repo
+sources:
+  - type: user
+    value: scalvert
+    repos:
+      mode: all # all | selected
+      selected: [] # when mode: selected, the repo names to include
+      excludeForks: true
+      visibility: public # all | public | private
+
+# Repos to always exclude, as "owner/name".
+excludedRepos: []
+
+# ── Digest ───────────────────────────────────────────────────────────────────
+digest:
+  topN: 10 # how many ranked items the digest highlights
+
+# ── Dispatch ─────────────────────────────────────────────────────────────────
+# Where dispatched work is sent. The agent opens a PR in the target repo.
+dispatch:
+  agent: claude # claude (Claude GitHub app) | copilot (Copilot coding agent)
+
+# ── Notifications ────────────────────────────────────────────────────────────
+# Low-volume, ranked digest delivered outside the GitHub notification firehose.
+notifications:
+  slack:
+    enabled: false
+    # The incoming-webhook URL is a SECRET — set env SIGNALS_SLACK_WEBHOOK.
+    # The channel is determined by that webhook; this label is shown in the digest.
+    channel: ''
+  email:
+    enabled: false
+    to: '' # address that receives the digest
+    from: '' # sender address
+    # SMTP credentials are a SECRET — set env SIGNALS_SMTP_URL
+    # (e.g. smtp://user:pass@smtp.host:587).

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterReposBySourceSelection } from './engine'
+import { filterReposBySourceSelection } from '@/lib/github/filter-repos'
 import type { WorkspaceSource } from '@/types/workspace'
 
 interface TestRepo {

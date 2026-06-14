@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterReposForWorkspace } from './engine'
+import { filterReposForWorkspace } from '@/lib/github/filter-repos'
 
 const repos = [
   { name: 'core', fullName: 'org/core', isFork: false, isPrivate: false },
