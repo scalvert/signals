@@ -1,0 +1,44 @@
+name: Signals Digest
+
+# Builds the ranked attention digest on a schedule: refreshes state/signals.json,
+# updates the rolling digest issue, and sends Slack/email (if configured).
+
+on:
+  schedule:
+    - cron: '7 13 * * 1' # Mondays ~13:07 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write # commit refreshed state
+  issues: write # upsert the digest issue
+
+concurrency:
+  group: signals-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build digest
+        env:
+          # Fine-grained PAT with read access to the watched repos (the default
+          # GITHUB_TOKEN only sees this repo) and issues:write on this repo.
+          GITHUB_TOKEN: ${{ secrets.SIGNALS_GH_TOKEN }}
+          SIGNALS_SLACK_WEBHOOK: ${{ secrets.SIGNALS_SLACK_WEBHOOK }}
+          SIGNALS_SMTP_URL: ${{ secrets.SIGNALS_SMTP_URL }}
+        run: npx tsx src/digest.ts
+      - name: Commit refreshed state
+        run: |
+          git config user.name "signals[bot]"
+          git config user.email "signals[bot]@users.noreply.github.com"
+          git add state/signals.json
+          git diff --staged --quiet || git commit -m "chore: refresh signals digest state"
+          git push

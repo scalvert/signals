@@ -1,0 +1,39 @@
+name: Signals Dispatch
+
+# Hand an attention item to a coding agent by commenting "/dispatch <id>"
+# on the digest issue (or any issue). The id looks like "owner/repo#signal-type".
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  dispatch:
+    if: ${{ github.event.comment.user.type != 'Bot' && startsWith(github.event.comment.body, '/dispatch ') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Dispatch the item
+        env:
+          # Untrusted input — only ever read via this env var, never interpolated into the script.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          GITHUB_TOKEN: ${{ secrets.SIGNALS_GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          ID="$(printf '%s' "$COMMENT_BODY" | head -n1 | sed -E 's#^/dispatch[[:space:]]+##' | awk '{print $1}')"
+          if ! printf '%s' "$ID" | grep -Eq '^[A-Za-z0-9._/-]+#[A-Za-z0-9-]+$'; then
+            echo "Invalid dispatch id: '$ID' (expected owner/repo#signal-type)"
+            exit 1
+          fi
+          echo "Dispatching $ID"
+          npx tsx src/dispatch-cli.ts "$ID"
