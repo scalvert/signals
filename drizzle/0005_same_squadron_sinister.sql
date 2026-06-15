@@ -1,1 +1,0 @@
-ALTER TABLE `repos` ADD `is_fork` integer DEFAULT false NOT NULL;

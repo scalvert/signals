@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { prMergeVelocity } from './pr-merge-velocity'
-import { makeContext, makeRepo, makePR } from '../test-helpers'
+import { makeContext, makePR } from '../test-helpers'
 import type { MetricSignalResult } from '../../types'
 
 function evaluate(overrides = {}) {

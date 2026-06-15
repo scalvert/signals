@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { stalePRs } from './stale-prs'
-import { makeContext, makeRepo, makePR, makeSignal } from '../test-helpers'
+import { makeContext, makePR, makeSignal } from '../test-helpers'
 import type { EventSignalResult } from '../../types'
 
 function evaluate(overrides = {}) {

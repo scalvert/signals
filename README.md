@@ -1,153 +1,100 @@
-# <img src="public/signals-icon.png" alt="Signals" width="24" height="24" /> Signals
+# <img src="https://github.com/user-attachments/assets/placeholder" alt="" width="0" height="0" /> Signals
 
 > [!WARNING]
-> Signals is under active development and not yet feature-complete. Some screens are rough, some features are stubbed, and the data model may change. That said — contributions, feedback, and ideas are very welcome. If something catches your eye, open an issue or a PR.
+> Signals is under active development. The data model and surfaces may still change.
 
-Self-hostable dashboard for OSS maintainers. Track health scores, detect signals, dispatch fixes to coding agents, and query your repos with AI across shared GitHub org workspaces.
+**Signals tells an OSS maintainer the few things most worth their time across all their repos — and hands any of them to a coding agent that opens the PR.**
 
-![Signals Dashboard](screenshots/01-dashboard.png)
+It's GitHub-native and zero-infra: a scheduled GitHub Action ranks attention across your repos, keeps the result as structured data in the repo, and surfaces it where you already are — your AI tool (MCP), a rolling digest issue, and Slack/email. There is no server, no database, and no login to manage.
 
-> [See the full UI tour →](docs/tour.md)
-
-### Detect → Dispatch → Fix
-
-Signals turns health checks and signal detection into actionable tasks you can dispatch to coding agents.
-
-![Task Dispatch](screenshots/07-tasks.png)
-
-## Features
-
-- **Health scoring** — deterministic 0–100 score per repo across four pillars (Activity, Community, Quality, Security) with actionable remediation
-- **Signal detection** — automated alerts for star spikes, dormant repos, stale PRs, health drops, and milestones
-- **Task dispatch** — turn signals into tasks and dispatch them to Claude Code, Cursor, Codex, or a custom webhook. Signals detects the problem; your coding agent fixes it.
-- **AI chat** — ask questions about your repos using Claude with tool-calling against your live data
-- **MCP server** — expose your repo data to Claude Code, Cursor, and other AI tools via Streamable HTTP
-- **Shared workspace model** — group repos by GitHub App installation, org, project, or selected repo set
-- **Repo filtering** — include/exclude specific repos per workspace
-
-## Quick Start
-
-```bash
-git clone https://github.com/scalvert/signals.git
-cd signals
-npm install
-```
-
-Create a `.env` file:
-
-```bash
-cp .env.example .env
-```
-
-Optionally add an Anthropic API key for the AI chat panel:
+## How it works
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+        ┌─ scheduled Action ──────────────────────────────────────┐
+        │  fetch repos + PRs → score & rank → state/signals.json   │
+        └─────────────┬───────────────────────────────────────────┘
+                      │ renders the same ranked data to…
+   ┌──────────────────┼─────────────────────────────┐
+   ▼                  ▼                              ▼
+ MCP server      rolling digest issue          Slack + email
+ (list_attention, (one issue, updated          (low-volume, ranked —
+  dispatch_item)   in place; comment             outside the GitHub
+                   /dispatch <id>)               notification firehose)
+                      │
+                      ▼
+            opens a scoped issue in the target repo →
+            the Claude GitHub app implements it → PR
 ```
 
-Run the database migration and start the dev server:
+- **State, not noise.** `state/signals.json` is the single source of truth — structured and queryable; `git diff` between runs is the changelog.
+- **Three ways to act**, all over the same data: ask your AI tool ("what should I work on?"), open the digest issue, or tap a Slack notification on your phone.
+- **The agents do the work.** Signals decides *what*; GitHub Copilot or the Claude GitHub app does the coding and opens the PR.
 
-```bash
-npm run db:migrate
-npm run dev
-```
+## Quick start
 
-Visit http://localhost:3000 to create your first workspace.
+1. **Use this repo as a template** (or clone it) for your own `signals` repo.
+2. **Add secrets** (Settings → Secrets and variables → Actions):
+   - `SIGNALS_GH_TOKEN` — a fine-grained PAT with **Contents: read**, **Issues: read/write**, **Pull requests: read/write**, **Metadata: read** on the repos you want to watch. (The default `GITHUB_TOKEN` can only see this repo.)
+   - `ANTHROPIC_API_KEY` — for the Claude GitHub app on your target repos (and optional enrichment).
+   - *(optional)* `SIGNALS_SLACK_WEBHOOK`, `SIGNALS_SMTP_URL` for notifications.
+3. **Edit `signals.config.yml`** — what to watch, dispatch agent, and notification channels.
+4. **Run it:** trigger the **Signals Digest** workflow (or wait for the schedule). It updates `state/signals.json`, upserts the digest issue, and notifies.
+5. **Act on it** from your AI tool (below), from the digest issue (`/dispatch <id>`), or from Slack.
 
-On first run, Signals creates a private GitHub App from a manifest. Install that app on the org or account you want to monitor, then create a workspace linked to that installation. Repository sync uses GitHub App installation tokens. Signed-in user OAuth tokens are used for identity and user-attributed actions such as dispatching PR comments.
+For dispatch to open PRs, each **target repo** needs the [Claude GitHub app](https://github.com/apps/claude) + `ANTHROPIC_API_KEY` + a `claude.yml` workflow (see `.github/workflows/claude.yml`).
 
-## MCP Server
+## Use it from your AI tool (MCP)
 
-Signals exposes an MCP server at `/api/mcp` that AI coding tools can connect to. It is localhost-only by default; set `SIGNALS_ALLOW_REMOTE_MCP=true` only for a trusted network deployment.
-
-### Claude Code
-
-Add to your `.claude/mcp.json`:
+Signals ships a local stdio MCP server. Add it to Claude Code / Cursor / Codex:
 
 ```json
 {
   "mcpServers": {
-    "signals": {
-      "type": "streamable-http",
-      "url": "http://localhost:3000/api/mcp"
-    }
+    "signals": { "command": "npx", "args": ["tsx", "src/mcp.ts"] }
   }
 }
 ```
 
-### Available MCP Tools
+| Tool | What it does |
+|------|--------------|
+| `list_attention` | The ranked "what should I work on?" list across your repos |
+| `get_item` | Full detail + the ready-to-dispatch prompt for one item |
+| `dispatch_item` | Open a scoped issue in the target repo and route it to the agent |
 
-| Tool | Description |
-|------|-------------|
-| `list_workspaces` | List all configured workspaces |
-| `get_workspace_summary` | Repo count, health scores, top/bottom repos |
-| `get_repos_needing_attention` | Repos below a health threshold |
-| `get_external_prs` | Open PRs from external contributors |
-| `get_repo_health` | Detailed per-check health breakdown for a repo |
-| `get_signal_feed` | Recent signals (star spikes, health drops, etc.) |
+## Configuration (`signals.config.yml`)
 
-## Health Scoring
-
-Each repo is scored 0–100 across active health pillars. Pillar point capacity is distributed across the checks that currently apply to a repository.
-
-| Pillar | Checks |
-|--------|--------|
-| **Activity** | Commit frequency, release cadence, PR merge velocity |
-| **Community** | External PR ratio, first response time |
-| **Quality** | CI configuration, LICENSE file, CONTRIBUTING.md |
-| **Security** | Placeholder (OpenSSF Scorecard integration planned) |
-
-Grades: **A** ≥ 80, **B** ≥ 65, **C** ≥ 50, **D** < 50
-
-### Adding a Health Check
-
-Health checks are pure functions in `lib/scoring/checks/`. To add one:
-
-1. Create a file in the appropriate pillar directory (e.g. `lib/scoring/checks/quality/my-check.ts`)
-2. Implement the `HealthCheck` interface:
-
-```ts
-import type { HealthCheck } from '../../types'
-
-export const myCheck: HealthCheck = {
-  id: 'my-check',
-  name: 'My Check',
-  description: 'What this checks',
-  pillar: 'quality',
-  weight: 0.2,
-  applies: () => true,
-  run(repo) {
-    return {
-      score: 1, // 0–1
-      label: 'Check passed',
-      evidence: ['reason'],
-      actionable: undefined,
-    }
-  },
-}
+```yaml
+sources:                # what to watch
+  - type: user          # user | org | repo
+    value: your-handle
+    repos: { mode: all, excludeForks: true, visibility: public }
+excludedRepos: []
+digest: { topN: 10 }
+dispatch: { agent: claude }   # claude | copilot
+notifications:
+  slack: { enabled: false, channel: '' }   # webhook → env SIGNALS_SLACK_WEBHOOK
+  email: { enabled: false, to: '', from: '' }  # SMTP → env SIGNALS_SMTP_URL
 ```
 
-3. Register it in `lib/scoring/checks/index.ts`
-4. Write a test in `test/lib/scoring/checks/`
+Secrets are **named, not stored** here — set them as environment variables / Actions secrets.
 
-## Configuration
+## Health & signals
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | Anthropic API key for AI chat (optional) |
-| `DATABASE_URL` | `./signals.db` | SQLite database path |
-| `SYNC_INTERVAL_MINUTES` | `15` | Auto-sync interval |
-| `SIGNALS_ALLOW_REMOTE_MCP` | `false` | Allow `/api/mcp` from non-localhost hosts |
+Each repo is scored 0–100 across pillars (Activity, Community, Quality) by deterministic checks in `lib/signals/definitions/`, and event detectors flag dormant repos, stale PRs, milestones, and more. Items are ranked by severity, repo liveness, and how actionable they are (extreme dormancy is treated as an archive decision, not urgent work).
 
-## Tech Stack
+## Development
 
-- [Next.js](https://nextjs.org) 16 / React 19
-- [Tailwind CSS](https://tailwindcss.com) v4
-- [shadcn/ui](https://ui.shadcn.com) components
-- [Drizzle ORM](https://orm.drizzle.team) + SQLite
-- [Octokit](https://github.com/octokit) (GitHub GraphQL API)
-- [Vercel AI SDK](https://sdk.vercel.ai) + Claude
-- [MCP SDK](https://modelcontextprotocol.io) (Streamable HTTP)
+```bash
+npm install
+GITHUB_TOKEN=$(gh auth token) npm run digest   # print the ranked digest locally
+npm run mcp                                     # run the MCP server
+npm test                                        # vitest
+npm run typecheck
+```
+
+## Tech
+
+TypeScript (ESM, run via [tsx](https://tsx.is)) · [Octokit](https://github.com/octokit) (GitHub GraphQL/REST) · [MCP SDK](https://modelcontextprotocol.io) · [Vercel AI SDK](https://sdk.vercel.ai) + Claude (optional enrichment) · GitHub Actions. No server, no database.
 
 ## License
 

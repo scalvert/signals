@@ -1,39 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import {
-  cn,
-  formatRelativeDate,
-  slugify,
-  gradeFromScore,
-  triageFromGrade,
-} from './utils'
-
-describe('cn', () => {
-  it('merges multiple class strings', () => {
-    expect(cn('foo', 'bar')).toBe('foo bar')
-  })
-
-  it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', 'visible')).toBe('base visible')
-    expect(cn('base', true && 'active')).toBe('base active')
-  })
-
-  it('deduplicates conflicting tailwind classes', () => {
-    expect(cn('p-4', 'p-2')).toBe('p-2')
-    expect(cn('text-red-500', 'text-blue-500')).toBe('text-blue-500')
-  })
-
-  it('handles undefined and null inputs', () => {
-    expect(cn('foo', undefined, null, 'bar')).toBe('foo bar')
-  })
-
-  it('handles empty input', () => {
-    expect(cn()).toBe('')
-  })
-
-  it('handles array inputs', () => {
-    expect(cn(['foo', 'bar'])).toBe('foo bar')
-  })
-})
+import { formatRelativeDate, slugify, gradeFromScore, triageFromGrade } from './utils'
 
 describe('formatRelativeDate', () => {
   beforeEach(() => {

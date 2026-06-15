@@ -1,5 +1,5 @@
 import { getOctokit } from '@/lib/github/client'
-import type { DispatchInfo, SignalsState } from './types'
+import type { SignalsState } from './types'
 
 function parseIssueUrl(url: string): { owner: string; repo: string; number: number } | null {
   const m = url.match(/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/)
