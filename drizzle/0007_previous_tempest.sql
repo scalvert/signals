@@ -1,1 +1,0 @@
-ALTER TABLE `repo_context` ADD `dismissed_checks` text DEFAULT '[]' NOT NULL;

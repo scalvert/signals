@@ -1,1 +1,0 @@
-ALTER TABLE `workspaces` ADD `excluded_repos` text DEFAULT '[]' NOT NULL;

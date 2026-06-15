@@ -1,9 +1,0 @@
-node_modules
-.next
-.git
-.claude
-.omc
-*.db
-*.db-shm
-*.db-wal
-beacon-scaffold

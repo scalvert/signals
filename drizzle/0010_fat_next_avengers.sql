@@ -1,1 +1,0 @@
-ALTER TABLE `signals` ADD `fixable` integer DEFAULT 0 NOT NULL;
