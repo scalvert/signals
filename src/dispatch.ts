@@ -20,6 +20,8 @@ function buildIssueBody(item: AttentionItem): string {
     '',
     item.dispatch?.prompt ?? item.detail,
     '',
+    'When the change is ready, open a pull request (do not just leave a branch).',
+    '',
     '---',
     `_Dispatched by Signals — \`${item.type}\` on ${item.repo} (rank ${item.rank})._`,
   ].join('\n')

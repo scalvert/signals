@@ -7,6 +7,7 @@ import {
 import { loadConfig } from './config'
 import { collectState } from './collect'
 import { dispatchItem } from './dispatch'
+import { mergeDispatchState, reconcileDispatch } from './reconcile'
 import { readState, writeState } from './state'
 import type { AttentionItem, SignalsState } from './types'
 
@@ -16,7 +17,10 @@ async function getState(refresh: boolean): Promise<SignalsState> {
     const cached = readState()
     if (cached) return cached
   }
+  const prior = readState()
   const state = await collectState(loadConfig())
+  mergeDispatchState(state, prior)
+  await reconcileDispatch(state, { openMissingPRs: false })
   writeState(state)
   return state
 }

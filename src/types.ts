@@ -11,9 +11,10 @@ export interface DispatchInfo {
   needs?: AgentNeeds
   /** Interpolated, ready-to-hand-to-an-agent prompt. */
   prompt: string
-  /** Filled in at dispatch time (Phase 1/2). */
+  /** Filled in at dispatch time and updated by reconciliation. */
   agent?: string
   targetIssueUrl?: string
+  branch?: string
   prUrl?: string
   status?: DispatchStatus
 }
